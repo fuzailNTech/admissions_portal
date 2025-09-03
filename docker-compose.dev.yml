@@ -1,0 +1,21 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DATABASE_URL: ${DATABASE_URL}
+        ENVIRONMENT: dev
+    container_name: admissions_portal
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 9000 --reload"
+    volumes:
+      - type: bind
+        source: ./app
+        target: /code/app
+        read_only: false
+    ports:
+      - "9000:9000"
+    env_file:
+      - .env
