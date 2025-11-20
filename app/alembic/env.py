@@ -4,8 +4,14 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from app.database.config.db import Base
 from app.settings import DATABASE_URL
-from app.database.models.auth import *
-from app.database.models.workflow import *
+
+from app.database.models.institute import Institute
+from app.database.models.auth import User, UserRole, VerificationToken
+from app.database.models.workflow import (
+    WorkflowCatalog,
+    WorkflowDefinition,
+    WorkflowInstance,
+)
 
 from alembic import context
 

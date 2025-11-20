@@ -1,11 +1,9 @@
-from fastapi import FastAPI, HTTPException
-from app.routers.auth import auth_router
+from fastapi import FastAPI
 from app.database.config.db import engine, Base
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers.auth import auth_router
+from app.routers import api_router
 
 app = FastAPI()
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -16,4 +14,5 @@ app.add_middleware(
     expose_headers=["X-App-Error-Code", "X-Account-Status"],  # Expose custom headers
 )
 
-app.include_router(auth_router)
+# Include the API router
+app.include_router(api_router)
