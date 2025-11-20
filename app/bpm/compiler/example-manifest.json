@@ -1,0 +1,220 @@
+{
+  "process_id": "College_Admission_Process_2026",
+  "workflow_name": "College Admission Process 2026",
+  "version": 1,
+  "start": "CA_SendEmail",
+  "end": ["CA_AdmissionSuccessful", "CA_Rejected", "CA_AdmissionCancelled"],
+  "nodes": [
+    {
+      "id": "CA_SendEmail",
+      "type": "call",
+      "name": "Send Application Received Email",
+      "subflow_key": "communication.send_email",
+      "subflow_version": 1,
+      "policy_ref": "email_template_policy",
+      "input_mapping": {
+        "applicant_email": "${email}",
+        "user_id": "${user_id}"
+      },
+      "output_mapping": {
+        "email_sent": "${email_sent}"
+      },
+      "next": "CA_AssignApplication"
+    },
+    {
+      "id": "CA_AssignApplication",
+      "type": "call",
+      "name": "Assign Application",
+      "subflow_key": "assign.application",
+      "subflow_version": 1,
+      "policy_ref": "assignment_policy",
+      "input_mapping": {
+        "application_data": "${application}",
+        "user_id": "${user_id}"
+      },
+      "output_mapping": {
+        "assigned_officer": "${assigned_officer}",
+        "assignment_id": "${assignment_id}"
+      },
+      "next": "CA_VerifyDocuments"
+    },
+    {
+      "id": "CA_VerifyDocuments",
+      "type": "call",
+      "name": "Verify Documents",
+      "subflow_key": "docs.verification",
+      "subflow_version": 2,
+      "policy_ref": "document_verification",
+      "input_mapping": {
+        "documents": "${documents}",
+        "verification_policy": "${policy.verification}"
+      },
+      "output_mapping": {
+        "verification": "${verification}"
+      },
+      "next": "GW_IfVerified"
+    },
+    {
+      "id": "GW_IfVerified",
+      "type": "gateway",
+      "gateway_kind": "exclusive",
+      "branches": [
+        { 
+          "when": "${verification.status == 'verified'}", 
+          "to": "CA_Interview" 
+        },
+        { 
+          "else": true, 
+          "to": "GW_ReverificationLimit" 
+        }
+      ]
+    },
+    {
+      "id": "GW_ReverificationLimit",
+      "type": "gateway",
+      "gateway_kind": "exclusive",
+      "branches": [
+        { 
+          "when": "${verification.attempts < policy.verification_limit}", 
+          "to": "CA_RequestDocs" 
+        },
+        { 
+          "else": true, 
+          "to": "CA_Rejected" 
+        }
+      ]
+    },
+    {
+      "id": "CA_RequestDocs",
+      "type": "call",
+      "name": "Request Missing/Incorrect Docs",
+      "subflow_key": "docs.request_missing",
+      "subflow_version": 1,
+      "policy_ref": "request_docs_policy",
+      "input_mapping": {
+        "missing_docs": "${verification.missing_documents}",
+        "applicant_email": "${email}"
+      },
+      "output_mapping": {
+        "request_sent": "${request_sent}"
+      },
+      "next": "CA_VerifyDocuments"
+    },
+    {
+      "id": "CA_Interview",
+      "type": "call",
+      "name": "Interview",
+      "subflow_key": "admissions.interview",
+      "subflow_version": 3,
+      "policy_ref": "interview_policy",
+      "input_mapping": {
+        "applicant_id": "${user_id}",
+        "application_data": "${application}",
+        "assigned_officer": "${assigned_officer}"
+      },
+      "output_mapping": {
+        "interview": "${interview}"
+      },
+      "next": "GW_IfPassed"
+    },
+    {
+      "id": "GW_IfPassed",
+      "type": "gateway",
+      "gateway_kind": "exclusive",
+      "branches": [
+        { 
+          "when": "${interview.result == 'passed'}", 
+          "to": "CA_FeeCalculation" 
+        },
+        { 
+          "else": true, 
+          "to": "CA_Rejected" 
+        }
+      ]
+    },
+    {
+      "id": "CA_FeeCalculation",
+      "type": "call",
+      "name": "Fee Package Calculation",
+      "subflow_key": "finance.fee_calculation",
+      "subflow_version": 1,
+      "policy_ref": "fee_policy",
+      "input_mapping": {
+        "applicant_marks": "${application.marks}",
+        "interview_score": "${interview.score}",
+        "fee_policy": "${policy.fee}"
+      },
+      "output_mapping": {
+        "fee_package": "${fee_package}",
+        "scholarship": "${scholarship}"
+      },
+      "next": "CA_SendOffer"
+    },
+    {
+      "id": "CA_SendOffer",
+      "type": "call",
+      "name": "Send Admission Offer",
+      "subflow_key": "communication.send_offer",
+      "subflow_version": 1,
+      "policy_ref": "offer_policy",
+      "input_mapping": {
+        "applicant_email": "${email}",
+        "fee_package": "${fee_package}",
+        "scholarship": "${scholarship}"
+      },
+      "output_mapping": {
+        "offer_sent": "${offer_sent}",
+        "offer_id": "${offer_id}"
+      },
+      "next": "GW_IfAccepted"
+    },
+    {
+      "id": "GW_IfAccepted",
+      "type": "gateway",
+      "gateway_kind": "exclusive",
+      "branches": [
+        { 
+          "when": "${offer.accepted == true}", 
+          "to": "CA_AdmissionSuccessful" 
+        },
+        { 
+          "else": true, 
+          "to": "CA_AdmissionCancelled" 
+        }
+      ]
+    },
+    {
+      "id": "CA_AdmissionSuccessful",
+      "type": "call",
+      "name": "Admission Successful",
+      "subflow_key": "end.success",
+      "subflow_version": 1,
+      "input_mapping": {
+        "user_id": "${user_id}",
+        "offer_id": "${offer_id}"
+      }
+    },
+    {
+      "id": "CA_Rejected",
+      "type": "call",
+      "name": "Rejected",
+      "subflow_key": "end.rejected",
+      "subflow_version": 1,
+      "input_mapping": {
+        "user_id": "${user_id}",
+        "rejection_reason": "${rejection_reason}"
+      }
+    },
+    {
+      "id": "CA_AdmissionCancelled",
+      "type": "call",
+      "name": "Admission Cancelled",
+      "subflow_key": "end.cancelled",
+      "subflow_version": 1,
+      "input_mapping": {
+        "user_id": "${user_id}",
+        "offer_id": "${offer_id}"
+      }
+    }
+  ]
+}

@@ -1,134 +1,104 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="a71ebc4" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
-  <bpmn:process id="user_registration" name="User Registration" isExecutable="true">
-    <bpmn:startEvent id="start_registration" name="Registration Started">
-      <bpmn:outgoing>Flow_1dtvah4</bpmn:outgoing>
-    </bpmn:startEvent>
-    <bpmn:sequenceFlow id="Flow_1dtvah4" sourceRef="start_registration" targetRef="task_send_email" />
-    <bpmn:eventBasedGateway id="gw_wait_user_action" name="Wait for user action">
-      <bpmn:incoming>Flow_15v8r6y</bpmn:incoming>
-      <bpmn:outgoing>Flow_00hsmd9</bpmn:outgoing>
-      <bpmn:outgoing>Flow_1wlbh0d</bpmn:outgoing>
-    </bpmn:eventBasedGateway>
-    <bpmn:intermediateCatchEvent id="catch_timeout" name="24h timeout">
-      <bpmn:incoming>Flow_00hsmd9</bpmn:incoming>
-      <bpmn:outgoing>Flow_06rn9lj</bpmn:outgoing>
-      <bpmn:timerEventDefinition id="TimerEventDefinition_1sa9tqw">
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">'PT24H'</bpmn:timeDuration>
-      </bpmn:timerEventDefinition>
-    </bpmn:intermediateCatchEvent>
-    <bpmn:sequenceFlow id="Flow_00hsmd9" sourceRef="gw_wait_user_action" targetRef="catch_timeout" />
-    <bpmn:intermediateCatchEvent id="catch_email_verified" name="EmailVerified">
-      <bpmn:extensionElements />
-      <bpmn:incoming>Flow_1wlbh0d</bpmn:incoming>
-      <bpmn:outgoing>Flow_0p6uv5p</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_19hg3w2" messageRef="Message_3ftsmgs" />
-    </bpmn:intermediateCatchEvent>
-    <bpmn:sequenceFlow id="Flow_1wlbh0d" sourceRef="gw_wait_user_action" targetRef="catch_email_verified" />
-    <bpmn:serviceTask id="task_verify_user" name="Verify User">
+<?xml version='1.0' encoding='UTF-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:app="urn:yourapp:ext" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI">
+  <bpmn:process id="Parent" isExecutable="true">
+    <bpmn:callActivity id="CA_Verify" name="Verify Documents" calledElement="docs.verify_bundle@v7">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="" />
+        <app:params>{"vendor": "VeroDocs", "sla_hours": 24}</app:params>
+        <app:inputMap>{"documents": "$.application.documents"}</app:inputMap>
+        <app:outputMap>{"$.application.verification": "$out"}</app:outputMap>
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_0p6uv5p</bpmn:incoming>
-      <bpmn:outgoing>Flow_0azxx3w</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_0p6uv5p" sourceRef="catch_email_verified" targetRef="task_verify_user" />
-    <bpmn:endEvent id="end_registered" name="User Registered">
-      <bpmn:incoming>Flow_0azxx3w</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_0azxx3w" sourceRef="task_verify_user" targetRef="end_registered" />
-    <bpmn:endEvent id="end_expired" name="Verification Expired">
-      <bpmn:incoming>Flow_06rn9lj</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_06rn9lj" sourceRef="catch_timeout" targetRef="end_expired" />
-    <bpmn:serviceTask id="task_send_email" name="Send Verification Email">
+    </bpmn:callActivity>
+    <bpmn:exclusiveGateway id="GW_ReviewDecision" default="F__5"/>
+    <bpmn:callActivity id="CA_FacultyReview" name="Faculty Review" calledElement="review.faculty_panel@v2">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="" />
+        <app:params>{"committee": "Admissions", "min_score": 70}</app:params>
+        <app:inputMap>{}</app:inputMap>
+        <app:outputMap>{}</app:outputMap>
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_1dtvah4</bpmn:incoming>
-      <bpmn:outgoing>Flow_15v8r6y</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_15v8r6y" sourceRef="task_send_email" targetRef="gw_wait_user_action" />
+    </bpmn:callActivity>
+    <bpmn:callActivity id="CA_Shortlist" name="Shortlist Interview" calledElement="review.shortlist_interview@v1">
+      <bpmn:extensionElements>
+        <app:params>{"panel": "Light"}</app:params>
+        <app:inputMap>{}</app:inputMap>
+        <app:outputMap>{}</app:outputMap>
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:callActivity id="CA_Fee" name="Collect Fee" calledElement="payments.collect_fee@v4">
+      <bpmn:extensionElements>
+        <app:params>{"currency": "PKR", "amount_source": "fixed", "fixed_amount": 5000, "due_in_hours": 48}</app:params>
+        <app:inputMap>{"applicantId": "$.applicant.id", "programId": "$.program.id"}</app:inputMap>
+        <app:outputMap>{"$.payments.application_fee": "$out"}</app:outputMap>
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:startEvent id="Start"/>
+    <bpmn:sequenceFlow id="F_START" sourceRef="Start" targetRef="CA_Verify"/>
+    <bpmn:endEvent id="End__CA_Fee"/>
+    <bpmn:sequenceFlow id="F__1" sourceRef="CA_Verify" targetRef="GW_ReviewDecision"/>
+    <bpmn:sequenceFlow id="F__2" sourceRef="CA_FacultyReview" targetRef="CA_Fee"/>
+    <bpmn:sequenceFlow id="F__3" sourceRef="CA_Shortlist" targetRef="CA_Fee"/>
+    <bpmn:sequenceFlow id="F__4" sourceRef="GW_ReviewDecision" targetRef="CA_FacultyReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${json_logic('{"and": [{"&gt;=": ["$.gpa", 3.0]}, {"&gt;=": ["$.testScore", 70]}]}')}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F__5" sourceRef="GW_ReviewDecision" targetRef="CA_Shortlist"/>
+    <bpmn:sequenceFlow id="F__END__CA_Fee" sourceRef="CA_Fee" targetRef="End__CA_Fee"/>
   </bpmn:process>
-  <bpmn:message id="Message_3ftsmgs" name="EmailVerified">
-    <bpmn:extensionElements />
-  </bpmn:message>
-  <bpmn:message id="Message_15ii15a" name="Message_15ii15a" />
-  <bpmn:message id="Message_201si1o" name="Message_201si1o" />
-  <bpmn:message id="Message_0oh69bs" name="" />
-  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="user_registration">
-      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="start_registration">
-        <dc:Bounds x="150" y="100" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="140" y="143" width="59" height="27" />
-        </bpmndi:BPMNLabel>
+  <bpmndi:BPMNDiagram>
+    <bpmndi:BPMNPlane bpmnElement="Parent">
+      <bpmndi:BPMNShape bpmnElement="CA_Verify">
+        <dc:Bounds x="350" y="260" width="160" height="80"/>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_03ple12_di" bpmnElement="gw_wait_user_action">
-        <dc:Bounds x="395" y="93" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="388" y="55.5" width="63" height="27" />
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape bpmnElement="GW_ReviewDecision">
+        <dc:Bounds x="600" y="260" width="50" height="50"/>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0vjoa1k_di" bpmnElement="catch_timeout">
-        <dc:Bounds x="402" y="182" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="391" y="225" width="58" height="14" />
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape bpmnElement="CA_FacultyReview">
+        <dc:Bounds x="850" y="260" width="160" height="80"/>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0ef7xyg_di" bpmnElement="catch_email_verified">
-        <dc:Bounds x="502" y="100" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="488" y="143" width="65" height="14" />
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape bpmnElement="CA_Shortlist">
+        <dc:Bounds x="850" y="120" width="160" height="80"/>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1v82faa_di" bpmnElement="task_verify_user">
-        <dc:Bounds x="600" y="78" width="100" height="80" />
-        <bpmndi:BPMNLabel />
+      <bpmndi:BPMNShape bpmnElement="CA_Fee">
+        <dc:Bounds x="1100" y="260" width="160" height="80"/>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_08vh5lw_di" bpmnElement="end_registered">
-        <dc:Bounds x="762" y="100" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="740" y="143" width="80" height="14" />
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape bpmnElement="Start">
+        <dc:Bounds x="100" y="260" width="36" height="36"/>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1mxnn6y_di" bpmnElement="end_expired">
-        <dc:Bounds x="492" y="182" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="483" y="225" width="54" height="27" />
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape bpmnElement="End__CA_Fee">
+        <dc:Bounds x="1350" y="260" width="36" height="36"/>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1lby9dg_di" bpmnElement="task_send_email">
-        <dc:Bounds x="240" y="78" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Flow_1dtvah4_di" bpmnElement="Flow_1dtvah4">
-        <di:waypoint x="186" y="118" />
-        <di:waypoint x="240" y="118" />
+      <bpmndi:BPMNEdge bpmnElement="F_START">
+        <di:waypoint x="118.0" y="278.0"/>
+        <di:waypoint x="274.0" y="278.0"/>
+        <di:waypoint x="430.0" y="300.0"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_00hsmd9_di" bpmnElement="Flow_00hsmd9">
-        <di:waypoint x="420" y="143" />
-        <di:waypoint x="420" y="182" />
+      <bpmndi:BPMNEdge bpmnElement="F__1">
+        <di:waypoint x="430.0" y="300.0"/>
+        <di:waypoint x="527.5" y="300.0"/>
+        <di:waypoint x="625.0" y="285.0"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1wlbh0d_di" bpmnElement="Flow_1wlbh0d">
-        <di:waypoint x="445" y="118" />
-        <di:waypoint x="502" y="118" />
+      <bpmndi:BPMNEdge bpmnElement="F__2">
+        <di:waypoint x="930.0" y="300.0"/>
+        <di:waypoint x="1055.0" y="300.0"/>
+        <di:waypoint x="1180.0" y="300.0"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0p6uv5p_di" bpmnElement="Flow_0p6uv5p">
-        <di:waypoint x="538" y="118" />
-        <di:waypoint x="600" y="118" />
+      <bpmndi:BPMNEdge bpmnElement="F__3">
+        <di:waypoint x="930.0" y="160.0"/>
+        <di:waypoint x="1055.0" y="160.0"/>
+        <di:waypoint x="1180.0" y="300.0"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0azxx3w_di" bpmnElement="Flow_0azxx3w">
-        <di:waypoint x="700" y="118" />
-        <di:waypoint x="762" y="118" />
+      <bpmndi:BPMNEdge bpmnElement="F__4">
+        <di:waypoint x="625.0" y="285.0"/>
+        <di:waypoint x="777.5" y="285.0"/>
+        <di:waypoint x="930.0" y="300.0"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_06rn9lj_di" bpmnElement="Flow_06rn9lj">
-        <di:waypoint x="438" y="200" />
-        <di:waypoint x="492" y="200" />
+      <bpmndi:BPMNEdge bpmnElement="F__5">
+        <di:waypoint x="625.0" y="285.0"/>
+        <di:waypoint x="777.5" y="285.0"/>
+        <di:waypoint x="930.0" y="160.0"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_15v8r6y_di" bpmnElement="Flow_15v8r6y">
-        <di:waypoint x="340" y="118" />
-        <di:waypoint x="395" y="118" />
+      <bpmndi:BPMNEdge bpmnElement="F__END__CA_Fee">
+        <di:waypoint x="1180.0" y="300.0"/>
+        <di:waypoint x="1274.0" y="300.0"/>
+        <di:waypoint x="1368.0" y="278.0"/>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

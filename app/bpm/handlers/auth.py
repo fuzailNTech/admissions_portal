@@ -1,13 +1,27 @@
 import secrets
 from datetime import datetime
+from typing import Dict, Callable
 from sqlalchemy.orm import Session
-from app.database.models.auth import VerificationToken
-from app.database.models.workflow import WorkflowInstance, User
 from SpiffWorkflow.task import Task
+from app.database.models.auth import VerificationToken, User
+from app.database.models.workflow import WorkflowInstance
+
+
+ServiceHandler = Callable[[Task], None]
+SERVICE_HANDLERS: Dict[str, ServiceHandler] = {}
+
+
+def service_task(name: str):
+    def _decorator(fn: ServiceHandler):
+        SERVICE_HANDLERS[name] = fn
+        return fn
+
+    return _decorator
 
 
 # "Send email" task: generate token, persist, (stub) send mail
-def task_send_verification_email(
+@service_task("send_verification_email")
+def handle_send_verification_email(
     task: Task, db: Session, wf_row: WorkflowInstance, user: User
 ):
     # idempotent: reuse existing active token if present
@@ -46,7 +60,8 @@ def task_send_verification_email(
 
 
 # "Create user" task: mark verified (idempotent)
-def task_verify_user(task: Task, db: Session, wf_row: WorkflowInstance, user: User):
+@service_task("verify_user")
+def handle_verify_user(task: Task, db: Session, wf_row: WorkflowInstance, user: User):
     print("Workflow data:", task.workflow.data)
     if not task.workflow.data.get("user_verified", False):
         raise Exception("User not verified, cannot complete task.")
