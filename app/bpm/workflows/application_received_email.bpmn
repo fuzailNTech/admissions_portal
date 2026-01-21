@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:spiffworkflow="http://spiffworkflow.org/bpmn/schema/1.0/core" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_96f6665" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.0.0-dev">
+  <bpmn:process id="communication.send_application_received_email_v1" name="Application Received Email v1" isExecutable="true">
+    <bpmn:sequenceFlow id="Flow_17db3yp" sourceRef="send_application_received_email_v1.start_event" targetRef="send_application_received_email_v1.prepare_context" />
+    <bpmn:endEvent id="send_application_received_email_v1.end_event" name="End">
+      <bpmn:incoming>Flow_18hd603</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_18hd603" sourceRef="send_application_received_email_v1.send_email" targetRef="send_application_received_email_v1.end_event" />
+    <bpmn:serviceTask id="send_application_received_email_v1.send_email" name="Application Received Email">
+      <bpmn:incoming>Flow_0mdr39o</bpmn:incoming>
+      <bpmn:outgoing>Flow_18hd603</bpmn:outgoing>
+      <bpmn:ioSpecification>
+        <bpmn:inputSet />
+      </bpmn:ioSpecification>
+    </bpmn:serviceTask>
+    <bpmn:startEvent id="send_application_received_email_v1.start_event" name="Start">
+      <bpmn:outgoing>Flow_17db3yp</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0mdr39o" sourceRef="send_application_received_email_v1.prepare_context" targetRef="send_application_received_email_v1.send_email" />
+    <bpmn:serviceTask id="send_application_received_email_v1.prepare_context" name="Prepare Context">
+
+      <bpmn:incoming>Flow_17db3yp</bpmn:incoming>
+      <bpmn:outgoing>Flow_0mdr39o</bpmn:outgoing>
+    </bpmn:serviceTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="communication.send_application_received_email_v1">
+      <bpmndi:BPMNShape id="Event_14za570_di" bpmnElement="send_application_received_email_v1.end_event">
+        <dc:Bounds x="512" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="520" y="202" width="21" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1n0vctw_di" bpmnElement="send_application_received_email_v1.send_email">
+        <dc:Bounds x="360" y="137" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_084kc2l_di" bpmnElement="send_application_received_email_v1.start_event">
+        <dc:Bounds x="102" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="109" y="202" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1dudve9_di" bpmnElement="send_application_received_email_v1.prepare_context">
+        <dc:Bounds x="200" y="137" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_17db3yp_di" bpmnElement="Flow_17db3yp">
+        <di:waypoint x="138" y="177" />
+        <di:waypoint x="200" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_18hd603_di" bpmnElement="Flow_18hd603">
+        <di:waypoint x="460" y="177" />
+        <di:waypoint x="512" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0mdr39o_di" bpmnElement="Flow_0mdr39o">
+        <di:waypoint x="300" y="177" />
+        <di:waypoint x="360" y="177" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:spiffworkflow="http://spiffworkflow.org/bpmn/schema/1.0/core" id="Definitions_96f6665" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.0.0-dev">
+  <bpmn:process id="operation.assign_application_v1" name="Assign Application v1" isExecutable="true">
+    <bpmn:startEvent id="assign_application_v1.start_event" name="Start Event">
+      <bpmn:outgoing>Flow_1eh58uj</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1eh58uj" sourceRef="assign_application_v1.start_event" targetRef="assign_application_v1.prepare_context" />
+    <bpmn:serviceTask id="assign_application_v1.prepare_context" name="Prepare Context">
+
+      <bpmn:incoming>Flow_1eh58uj</bpmn:incoming>
+      <bpmn:outgoing>Flow_0afjveq</bpmn:outgoing>
+      <bpmn:ioSpecification>
+        <bpmn:inputSet />
+      </bpmn:ioSpecification>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="assign_application_v1.mode_gw" name="Assignment Mode Gateway" default="Flow_1ow4k8j">
+      <bpmn:incoming>Flow_0afjveq</bpmn:incoming>
+      <bpmn:outgoing>Flow_1ow4k8j</bpmn:outgoing>
+      <bpmn:outgoing>Flow_08t93tn</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0afjveq" sourceRef="assign_application_v1.prepare_context" targetRef="assign_application_v1.mode_gw" />
+    <bpmn:sequenceFlow id="Flow_1ow4k8j" sourceRef="assign_application_v1.mode_gw" targetRef="assign_application_v1.auto_assign">
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="assign_application_v1.auto_assign" name="Auto Assign">
+
+      <bpmn:incoming>Flow_1ow4k8j</bpmn:incoming>
+      <bpmn:outgoing>Flow_1pqllx0</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_08t93tn" sourceRef="assign_application_v1.mode_gw" targetRef="assign_application_v1.select_assignee">
+      <bpmn:conditionExpression xsi:type="tFormalExpression">assignment_mode == "manual"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:userTask id="assign_application_v1.select_assignee" name="Select assignee">
+      <bpmn:incoming>Flow_08t93tn</bpmn:incoming>
+      <bpmn:outgoing>Flow_1hu8v31</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_1pqllx0" sourceRef="assign_application_v1.auto_assign" targetRef="assign_application_v1.notify_assignee" />
+    <bpmn:serviceTask id="assign_application_v1.notify_assignee" name="Notify Assignee">
+
+      <bpmn:incoming>Flow_1pqllx0</bpmn:incoming>
+      <bpmn:incoming>Flow_1hu8v31</bpmn:incoming>
+      <bpmn:outgoing>Flow_1r0vadw</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1hu8v31" sourceRef="assign_application_v1.select_assignee" targetRef="assign_application_v1.notify_assignee" />
+    <bpmn:endEvent id="assign_application_v1.end_event" name="End Event">
+      <bpmn:incoming>Flow_1r0vadw</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1r0vadw" sourceRef="assign_application_v1.notify_assignee" targetRef="assign_application_v1.end_event" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="operation.assign_application_v1">
+      <bpmndi:BPMNShape id="Event_15nt8ht_di" bpmnElement="assign_application_v1.start_event">
+        <dc:Bounds x="-238" y="12" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="-248" y="55" width="57" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1lsey2w_di" bpmnElement="assign_application_v1.prepare_context">
+        <dc:Bounds x="-130" y="-10" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1yv3rw7_di" bpmnElement="assign_application_v1.mode_gw" isMarkerVisible="true">
+        <dc:Bounds x="55" y="5" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="42" y="-32" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_05dzlqy_di" bpmnElement="assign_application_v1.auto_assign">
+        <dc:Bounds x="210" y="-10" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1gn35ql_di" bpmnElement="assign_application_v1.select_assignee">
+        <dc:Bounds x="210" y="100" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_103vxy0_di" bpmnElement="assign_application_v1.notify_assignee">
+        <dc:Bounds x="420" y="-10" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1i1cpoh_di" bpmnElement="assign_application_v1.end_event">
+        <dc:Bounds x="632" y="12" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="624" y="55" width="53" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1eh58uj_di" bpmnElement="Flow_1eh58uj">
+        <di:waypoint x="-202" y="30" />
+        <di:waypoint x="-130" y="30" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0afjveq_di" bpmnElement="Flow_0afjveq">
+        <di:waypoint x="-30" y="30" />
+        <di:waypoint x="55" y="30" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ow4k8j_di" bpmnElement="Flow_1ow4k8j">
+        <di:waypoint x="105" y="30" />
+        <di:waypoint x="210" y="30" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_08t93tn_di" bpmnElement="Flow_08t93tn">
+        <di:waypoint x="80" y="55" />
+        <di:waypoint x="80" y="140" />
+        <di:waypoint x="210" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1pqllx0_di" bpmnElement="Flow_1pqllx0">
+        <di:waypoint x="310" y="30" />
+        <di:waypoint x="420" y="30" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hu8v31_di" bpmnElement="Flow_1hu8v31">
+        <di:waypoint x="310" y="140" />
+        <di:waypoint x="365" y="140" />
+        <di:waypoint x="365" y="50" />
+        <di:waypoint x="420" y="50" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1r0vadw_di" bpmnElement="Flow_1r0vadw">
+        <di:waypoint x="520" y="30" />
+        <di:waypoint x="632" y="30" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

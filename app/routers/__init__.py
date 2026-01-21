@@ -1,11 +1,17 @@
 from fastapi import APIRouter
 from app.routers.auth import auth_router
-from app.routers.workflow_catalog import workflow_catalog_router
+from app.routers.admin import admin_router
+from app.routers.student import student_router
+from app.routers.super_admin import super_admin_router
 
 # Create API router with prefix
 api_router = APIRouter(prefix="/api/v1")
 
 # Include all routers
 api_router.include_router(auth_router)
-api_router.include_router(workflow_catalog_router)
 
+
+# Admin and Student routers (organized by user role)
+api_router.include_router(admin_router)
+api_router.include_router(student_router)
+api_router.include_router(super_admin_router)

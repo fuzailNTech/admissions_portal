@@ -111,14 +111,22 @@ def add_end(proc: etree._Element, node_id: str) -> etree._Element:
 
 
 def add_call(proc: etree._Element, node: Dict[str, Any]) -> etree._Element:
-    """Create a callActivity for a subprocess with optional data mapping."""
-    called_el = f"{node['subflow_key']}@v{node['subflow_version']}"
+    """Create a callActivity for a subprocess.
+    
+    Note: We use global workflow data instead of explicit input/output mappings.
+    The input_mapping and output_mapping in the manifest are kept for documentation
+    purposes but are not used to generate BPMN elements.
+    """
+    
+    # Generate node ID: ca_{id} where id is from manifest (sanitized)
+    node_id = f"ca_{node['id']}" if not node['id'].startswith('ca_') else node['id']
+    
     call = etree.SubElement(
         proc,
         b("callActivity"),
-        id=node["id"],
+        id=node_id,
         name=node.get("name", node["id"]),
-        calledElement=called_el,
+        calledElement=node["id"],
     )
 
     # Add extensionElements for policy reference
@@ -126,52 +134,9 @@ def add_call(proc: etree._Element, node: Dict[str, Any]) -> etree._Element:
         ext = etree.SubElement(call, b("extensionElements"))
         etree.SubElement(ext, a("policyRef")).text = node["policy_ref"]
 
-    # Add data input/output mappings if provided
-    input_mapping = node.get("input_mapping")
-    output_mapping = node.get("output_mapping")
-
-    if input_mapping or output_mapping:
-        io_spec = etree.SubElement(call, b("ioSpecification"))
-
-        if input_mapping:
-            for var_name, source_expr in input_mapping.items():
-                data_input = etree.SubElement(
-                    io_spec,
-                    b("dataInput"),
-                    id=f"{node['id']}_input_{var_name}",
-                    name=var_name,
-                )
-                input_set = etree.SubElement(io_spec, b("inputSet"))
-                etree.SubElement(input_set, b("dataInputRefs")).text = data_input.get(
-                    "id"
-                )
-
-                # Create data input association
-                data_input_assoc = etree.SubElement(call, b("dataInputAssociation"))
-                source = etree.SubElement(data_input_assoc, b("sourceRef"))
-                source.text = source_expr  # Expression or variable reference
-                target = etree.SubElement(data_input_assoc, b("targetRef"))
-                target.text = data_input.get("id")
-
-        if output_mapping:
-            for var_name, target_expr in output_mapping.items():
-                data_output = etree.SubElement(
-                    io_spec,
-                    b("dataOutput"),
-                    id=f"{node['id']}_output_{var_name}",
-                    name=var_name,
-                )
-                output_set = etree.SubElement(io_spec, b("outputSet"))
-                etree.SubElement(output_set, b("dataOutputRefs")).text = (
-                    data_output.get("id")
-                )
-
-                # Create data output association
-                data_output_assoc = etree.SubElement(call, b("dataOutputAssociation"))
-                source = etree.SubElement(data_output_assoc, b("sourceRef"))
-                source.text = data_output.get("id")
-                target = etree.SubElement(data_output_assoc, b("targetRef"))
-                target.text = target_expr  # Expression or variable reference
+    # Note: input_mapping and output_mapping are kept in manifest for documentation
+    # but we don't generate BPMN ioSpecification. Subprocesses access data directly
+    # from the shared workflow data context via task.workflow.data
 
     return call
 
@@ -236,13 +201,16 @@ def compile_manifest_to_bpmn(
                     n["subflow_key"], int(n["subflow_version"])
                 )  # sanity check
             el = add_call(proc, n)
+            # Generate calledElement in format: {subflow_key}_{version}
             refs.append(
                 {
                     "subflow_key": n["subflow_key"],
                     "version": int(n["subflow_version"]),
-                    "calledElement": f"{n['subflow_key']}@v{n['subflow_version']}",
+                    "calledElement": n["id"],
                 }
             )
+            # Use the BPMN node ID (which is ca_{id}) for mapping
+            node_id = f"ca_{n['id']}" if not n['id'].startswith('ca_') else n['id']
             nodes_xml[n["id"]] = el
 
         elif n["type"] == "gateway":
@@ -300,81 +268,3 @@ def compile_manifest_to_bpmn(
     return tostring(tree), refs
 
 
-# -----------------------------------------------------------
-# Example usage
-# -----------------------------------------------------------
-if __name__ == "__main__":
-    # Simple registry
-    CATALOG = {
-        # Communication-related subprocesses
-        ("communication.send_email", 1): {
-            "process_id": "communication.send_email@v1",
-            "checksum": "sha256:email-v1",
-            "description": "Sends 'Application Received' email to applicant.",
-        },
-        ("communication.send_offer", 1): {
-            "process_id": "communication.send_offer@v1",
-            "checksum": "sha256:offer-v1",
-            "description": "Sends admission offer email to applicant.",
-        },
-        # Application assignment
-        ("assign.application", 1): {
-            "process_id": "assign.application@v1",
-            "checksum": "sha256:assign-v1",
-            "description": "Assigns application to admission officer based on policy.",
-        },
-        # Document verification
-        ("docs.verification", 2): {
-            "process_id": "docs.verification@v2",
-            "checksum": "sha256:verify-v2",
-            "description": "Verifies applicant documents against college requirements.",
-        },
-        ("docs.request_missing", 1): {
-            "process_id": "docs.request_missing@v1",
-            "checksum": "sha256:reqdocs-v1",
-            "description": "Requests missing or incorrect documents from applicant.",
-        },
-        # Interview
-        ("admissions.interview", 3): {
-            "process_id": "admissions.interview@v3",
-            "checksum": "sha256:interview-v3",
-            "description": "Conducts interview and records applicant performance.",
-        },
-        # Financial evaluation
-        ("finance.fee_calculation", 1): {
-            "process_id": "finance.fee_calculation@v1",
-            "checksum": "sha256:fee-v1",
-            "description": "Calculates tuition fee or scholarship based on marks/policies.",
-        },
-        # Final stages
-        ("end.success", 1): {
-            "process_id": "end.success@v1",
-            "checksum": "sha256:end-success-v1",
-            "description": "Marks admission as successful and issues enrollment confirmation.",
-        },
-        ("end.rejected", 1): {
-            "process_id": "end.rejected@v1",
-            "checksum": "sha256:end-rejected-v1",
-            "description": "Marks application as rejected and notifies the applicant.",
-        },
-        ("end.cancelled", 1): {
-            "process_id": "end.cancelled@v1",
-            "checksum": "sha256:end-cancelled-v1",
-            "description": "Handles withdrawal or cancellation of admission by applicant.",
-        },
-    }
-
-    def catalog_lookup(key, ver):
-        if (key, ver) not in CATALOG:
-            raise ValueError(f"{key}@v{ver} not in catalog")
-        return CATALOG[(key, ver)]
-
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-
-    manifest = open(
-        f"{base_dir}/example-manifest.json",
-    ).read()
-
-    xml, refs = compile_manifest_to_bpmn(json.loads(manifest), catalog_lookup)
-    print(xml)
-    print("\nRefs:", json.dumps(refs, indent=2))
