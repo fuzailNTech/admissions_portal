@@ -68,7 +68,7 @@ class WorkflowDefinition(Base):
     manifest_json = Column(JSON, nullable=False)  # Original manifest JSON
     bpmn_xml = Column(Text, nullable=False)  # Compiled BPMN XML
     subprocess_refs = Column(JSON, nullable=True)  # List of referenced subprocesses
-    # e.g., [{"subflow_key": "communication.send_email", "version": 1, "calledElement": "..."}]
+    # e.g., [{"subflow_key": "communication.send_email", "version": 1, "calledElement": "communication.send_email_1"}]
     published = Column(Boolean, default=False, nullable=False, index=True)
     active = Column(Boolean, default=True, nullable=False)  # Can be unpublished but kept for history
     created_by = Column(

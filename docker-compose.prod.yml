@@ -1,0 +1,22 @@
+services:
+  server:
+    container_name: admissions_portal
+    build:
+      context: .
+      target: runtime
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: always
+    command: gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+
+  migrate:
+    container_name: admissions_portal_migrate
+    build:
+      context: .
+      target: runtime
+    env_file:
+      - .env
+    command: alembic upgrade head
+    restart: "no"

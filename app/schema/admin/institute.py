@@ -1,0 +1,105 @@
+from pydantic import BaseModel, Field
+from typing import Optional, Dict, List, Any
+from datetime import datetime, date
+from uuid import UUID
+
+
+# Import enums from models
+from app.database.models.institute import CampusType
+
+
+# Campus Schemas
+class CampusCreate(BaseModel):
+    institute_id: UUID
+    name: str = Field(..., min_length=1, max_length=255, description="Campus name")
+    campus_code: Optional[str] = Field(None, max_length=50)
+    campus_type: CampusType
+    country: str = Field(default="Pakistan")
+    province_state: Optional[str] = None
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
+    address_line: Optional[str] = None
+    campus_email: Optional[str] = None
+    campus_phone: Optional[str] = None
+    timezone: str = Field(default="Asia/Karachi")
+    custom_metadata: Dict[str, Any] = Field(default_factory=dict)
+    is_active: bool = True
+
+
+class CampusUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    campus_code: Optional[str] = Field(None, max_length=50)
+    campus_type: Optional[CampusType] = None
+    country: Optional[str] = None
+    province_state: Optional[str] = None
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
+    address_line: Optional[str] = None
+    campus_email: Optional[str] = None
+    campus_phone: Optional[str] = None
+    timezone: Optional[str] = None
+    custom_metadata: Optional[Dict[str, Any]] = None
+    is_active: Optional[bool] = None
+
+
+class CampusResponse(BaseModel):
+    id: UUID
+    institute_id: UUID
+    name: str
+    campus_code: Optional[str]
+    campus_type: CampusType
+    country: str
+    province_state: Optional[str]
+    city: Optional[str]
+    postal_code: Optional[str]
+    address_line: Optional[str]
+    campus_email: Optional[str]
+    campus_phone: Optional[str]
+    timezone: str
+    is_active: bool
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+# Program Schemas
+class ProgramCreate(BaseModel):
+    campus_id: UUID
+    name: str = Field(..., min_length=1, max_length=255)
+    code: str = Field(..., min_length=1, max_length=50)
+    level: str = Field(..., description="Intermediate, Bachelors, Masters, PhD")
+    category: Optional[str] = Field(None, description="Science, Arts, Commerce")
+    duration_years: Optional[int] = Field(None, ge=1, le=10)
+    description: Optional[str] = None
+    custom_metadata: Dict[str, Any] = Field(default_factory=dict)
+    is_active: bool = True
+
+
+class ProgramUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    code: Optional[str] = Field(None, min_length=1, max_length=50)
+    level: Optional[str] = None
+    category: Optional[str] = None
+    duration_years: Optional[int] = Field(None, ge=1, le=10)
+    description: Optional[str] = None
+    custom_metadata: Optional[Dict[str, Any]] = None
+    is_active: Optional[bool] = None
+
+
+class ProgramResponse(BaseModel):
+    id: UUID
+    campus_id: UUID
+    name: str
+    code: str
+    level: str
+    category: Optional[str]
+    duration_years: Optional[int]
+    description: Optional[str]
+    is_active: bool
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True

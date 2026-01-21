@@ -1,15 +1,47 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, DateTime
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Boolean, DateTime, Integer, Enum as SQLEnum, ForeignKey, UniqueConstraint, Index
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database.config.db import Base
+import enum
+
+
+class InstituteType(str, enum.Enum):
+    """Type of educational institute"""
+    GOVERNMENT = "government"
+    PRIVATE = "private"
+    SEMI_GOVERNMENT = "semi_government"
+
+
+class InstituteStatus(str, enum.Enum):
+    """Current operational status of institute"""
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    SUSPENDED = "suspended"
+    PENDING_APPROVAL = "pending_approval"
+
+
+class InstituteLevel(str, enum.Enum):
+    """Level of education provided"""
+    UNIVERSITY = "university"
+    COLLEGE = "college"
+    INSTITUTE = "institute"
+    SCHOOL = "school"
+
+
+class CampusType(str, enum.Enum):
+    """Type of campus by gender"""
+    BOYS = "boys"
+    GIRLS = "girls"
+    CO_ED = "co_ed"  # Co-educational (both)
 
 
 class Institute(Base):
     """Institutes/colleges/universities that use the student application portal."""
     __tablename__ = "institutes"
 
+    # Core Identity
     id = Column(
         UUID(as_uuid=True),
         primary_key=True,
@@ -18,13 +50,145 @@ class Institute(Base):
         nullable=False,
     )
     name = Column(String, nullable=False, index=True)
-    slug = Column(String, unique=True, nullable=False, index=True)  # URL-friendly identifier
-    active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    institute_code = Column(String, unique=True, nullable=False, index=True)  # For CMS linking
+    
+    # Classification
+    institute_type = Column(SQLEnum(InstituteType), nullable=False, index=True)
+    institute_level = Column(SQLEnum(InstituteLevel), nullable=False)
+    status = Column(SQLEnum(InstituteStatus), default=InstituteStatus.ACTIVE, nullable=False, index=True)
+    
+    # Official Information
+    registration_number = Column(String, nullable=True)  # HEC/Government registration
+    regulatory_body = Column(String, nullable=True)  # e.g., "BISE Lahore" , "HEC", "PEC", "PMDC"
+    established_year = Column(Integer, nullable=True)
+    
+    # Contact Information
+    primary_email = Column(String, nullable=True)
+    primary_phone = Column(String, nullable=True)
+    website_url = Column(String, nullable=True)
+    
+    # Flexible metadata using JSONB for additional fields
+    custom_metadata = Column(JSONB, default={}, nullable=False)  # For custom fields, settings, etc.
+    
+    # Audit fields
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_by = Column(UUID(as_uuid=True), nullable=True)  # Reference to admin user
 
     # Relationships
     users = relationship("User", back_populates="institute")
     workflow_definitions = relationship("WorkflowDefinition", back_populates="institute", cascade="all, delete-orphan")
     workflow_instances = relationship("WorkflowInstance", back_populates="institute", cascade="all, delete-orphan")
+    campuses = relationship("Campus", back_populates="institute", cascade="all, delete-orphan")
+    custom_form_fields = relationship("CustomFormField", back_populates="institute", cascade="all, delete-orphan")
 
+
+class Campus(Base):
+    """Campus of an institute - programs are offered at campus level"""
+    __tablename__ = "campuses"
+
+    # Core Identity
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+    )
+    
+    # Foreign Key
+    institute_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("institutes.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    
+    # Campus Info
+    name = Column(String, nullable=False)  # e.g., "Main Campus", "Girls Campus", "North Campus"
+    campus_code = Column(String, nullable=True)  # Optional code for the campus
+    campus_type = Column(SQLEnum(CampusType), nullable=False, index=True)
+    # Location
+    country = Column(String, default="Pakistan", nullable=False)
+    province_state = Column(String, nullable=True, index=True)
+    city = Column(String, nullable=True, index=True)
+    postal_code = Column(String, nullable=True)
+    address_line = Column(String, nullable=True)
+    # Contact
+    campus_email = Column(String, nullable=True)
+    campus_phone = Column(String, nullable=True)
+    
+    # Operational Settings
+    timezone = Column(String, default="Asia/Karachi", nullable=False)
+    
+    # Flexible metadata
+    custom_metadata = Column(JSONB, default={}, nullable=False)
+    
+    # Status
+    is_active = Column(Boolean, default=True, nullable=False)
+    
+    # Audit
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_by = Column(UUID(as_uuid=True), nullable=True)
+    
+    # Relationships
+    institute = relationship("Institute", back_populates="campuses")
+    programs = relationship("Program", back_populates="campus", cascade="all, delete-orphan")
+    admission_calendars = relationship("AdmissionCycle", back_populates="campus", cascade="all, delete-orphan")
+
+
+class Program(Base):
+    """Programs/degrees offered at a campus"""
+    __tablename__ = "programs"
+
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+    )
+    
+    # Foreign Key
+    campus_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("campuses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    # Program Identity
+    name = Column(String, nullable=False, index=True)  # e.g., "Pre-Medical", "Pre-Engineering"
+    code = Column(String, nullable=False, index=True)  # e.g., "PRE-MED", "PRE-ENG"
+
+    # Classification
+    level = Column(String, nullable=False, index=True)  # "Intermediate", "Bachelors", "Masters", "PhD"
+    category = Column(String, nullable=True, index=True)  # "Science", "Arts", "Commerce"
+    duration_years = Column(Integer, nullable=True)  # Program duration in years
+
+    # Description
+    description = Column(String, nullable=True)
+
+    # Flexible custom metadata
+    custom_metadata = Column(JSONB, default=dict, nullable=False)
+
+    # Status
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    # Audit
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    campus = relationship("Campus", back_populates="programs")
+    calendar_programs = relationship("ProgramAdmissionCycle", back_populates="program")
+    
+    # Constraints
+    __table_args__ = (
+        UniqueConstraint("campus_id", "code", name="uq_campus_program_code"),
+        Index("ix_program_campus_code", "campus_id", "code"),
+    )
+
+    def __repr__(self):
+        return f"<Program(code='{self.code}', name='{self.name}', campus_id='{self.campus_id}')>"

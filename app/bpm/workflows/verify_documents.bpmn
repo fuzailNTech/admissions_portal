@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:spiffworkflow="http://spiffworkflow.org/bpmn/schema/1.0/core" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_96f6665" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.0.0-dev">
+  <bpmn:process id="operation.verify_documents_v1" name="Verify Documents" isExecutable="true">
+    <bpmn:startEvent id="verify_documents_v1.start_event" name="Start Event">
+      <bpmn:outgoing>Flow_17db3yp</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_17db3yp" sourceRef="verify_documents_v1.start_event" targetRef="verify_documents_v1.prepare_context" />
+    <bpmn:serviceTask id="verify_documents_v1.prepare_context" name="Prepare Context">
+      <bpmn:incoming>Flow_17db3yp</bpmn:incoming>
+      <bpmn:outgoing>Flow_1n8ktav</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1n8ktav" sourceRef="verify_documents_v1.prepare_context" targetRef="verify_documents_v1.verify_documents" />
+    <bpmn:userTask id="verify_documents_v1.verify_documents" name="Verify Documents">
+      <bpmn:incoming>Flow_1n8ktav</bpmn:incoming>
+      <bpmn:incoming>Flow_1lxnx5q</bpmn:incoming>
+      <bpmn:outgoing>Flow_0p19ybz</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="verify_documents_v1.verification_status" name="Verification Status" default="Flow_0k285bg">
+      <bpmn:incoming>Flow_0p19ybz</bpmn:incoming>
+      <bpmn:outgoing>Flow_0k285bg</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0k2l5at</bpmn:outgoing>
+      <bpmn:outgoing>Flow_09bkiwk</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0p19ybz" sourceRef="verify_documents_v1.verify_documents" targetRef="verify_documents_v1.verification_status" />
+    <bpmn:sequenceFlow id="Flow_0k285bg" sourceRef="verify_documents_v1.verification_status" targetRef="verify_documents_v1.succeeded" />
+    <bpmn:sequenceFlow id="Flow_0k2l5at" sourceRef="verify_documents_v1.verification_status" targetRef="verify_documents_v1.failed">
+      <bpmn:conditionExpression>verification_status=="failed"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_09bkiwk" sourceRef="verify_documents_v1.verification_status" targetRef="verify_documents_v1.request_reupload">
+      <bpmn:conditionExpression>verification_status=="reupload_required"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="verify_documents_v1.request_reupload" name="Request Reupload">
+      <bpmn:incoming>Flow_09bkiwk</bpmn:incoming>
+      <bpmn:outgoing>Flow_1bza0lu</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1bza0lu" sourceRef="verify_documents_v1.request_reupload" targetRef="verify_documents_v1.student_reupload" />
+    <bpmn:userTask id="verify_documents_v1.student_reupload" name="Student Reupload">
+      <bpmn:incoming>Flow_1bza0lu</bpmn:incoming>
+      <bpmn:outgoing>Flow_1lxnx5q</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_1lxnx5q" sourceRef="verify_documents_v1.student_reupload" targetRef="verify_documents_v1.verify_documents" />
+    <bpmn:serviceTask id="verify_documents_v1.succeeded" name="Verification succeeded">
+      <bpmn:incoming>Flow_0k285bg</bpmn:incoming>
+      <bpmn:outgoing>Flow_0f5wtl2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="verify_documents_v1.failed" name="Verification Failed">
+      <bpmn:incoming>Flow_0k2l5at</bpmn:incoming>
+      <bpmn:outgoing>Flow_1rzo6jz</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="verify_documents_v1.end_event" name="End Event">
+      <bpmn:incoming>Flow_0f5wtl2</bpmn:incoming>
+      <bpmn:incoming>Flow_1rzo6jz</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0f5wtl2" sourceRef="verify_documents_v1.succeeded" targetRef="verify_documents_v1.end_event" />
+    <bpmn:sequenceFlow id="Flow_1rzo6jz" sourceRef="verify_documents_v1.failed" targetRef="verify_documents_v1.end_event" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="operation.verify_documents_v1">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="verify_documents_v1.start_event">
+        <dc:Bounds x="179" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="169" y="202" width="57" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1iav7sh_di" bpmnElement="verify_documents_v1.prepare_context">
+        <dc:Bounds x="270" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0idlpn1_di" bpmnElement="verify_documents_v1.verify_documents">
+        <dc:Bounds x="430" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0kxknt7_di" bpmnElement="verify_documents_v1.verification_status" isMarkerVisible="true">
+        <dc:Bounds x="595" y="152" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="592" y="115" width="56" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_04q0gs2_di" bpmnElement="verify_documents_v1.request_reupload">
+        <dc:Bounds x="710" y="360" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1xnsuo4_di" bpmnElement="verify_documents_v1.student_reupload">
+        <dc:Bounds x="710" y="520" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_14p6trl_di" bpmnElement="verify_documents_v1.succeeded">
+        <dc:Bounds x="710" y="137" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_18jyryx_di" bpmnElement="verify_documents_v1.failed">
+        <dc:Bounds x="710" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0hharn8_di" bpmnElement="verify_documents_v1.end_event">
+        <dc:Bounds x="882" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="874" y="202" width="53" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_17db3yp_di" bpmnElement="Flow_17db3yp">
+        <di:waypoint x="215" y="177" />
+        <di:waypoint x="270" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1n8ktav_di" bpmnElement="Flow_1n8ktav">
+        <di:waypoint x="370" y="177" />
+        <di:waypoint x="430" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0p19ybz_di" bpmnElement="Flow_0p19ybz">
+        <di:waypoint x="530" y="177" />
+        <di:waypoint x="595" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0k285bg_di" bpmnElement="Flow_0k285bg">
+        <di:waypoint x="645" y="177" />
+        <di:waypoint x="710" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0k2l5at_di" bpmnElement="Flow_0k2l5at">
+        <di:waypoint x="620" y="202" />
+        <di:waypoint x="620" y="290" />
+        <di:waypoint x="710" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09bkiwk_di" bpmnElement="Flow_09bkiwk">
+        <di:waypoint x="620" y="202" />
+        <di:waypoint x="620" y="400" />
+        <di:waypoint x="710" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1bza0lu_di" bpmnElement="Flow_1bza0lu">
+        <di:waypoint x="760" y="440" />
+        <di:waypoint x="760" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1lxnx5q_di" bpmnElement="Flow_1lxnx5q">
+        <di:waypoint x="710" y="560" />
+        <di:waypoint x="470" y="560" />
+        <di:waypoint x="470" y="217" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0f5wtl2_di" bpmnElement="Flow_0f5wtl2">
+        <di:waypoint x="810" y="177" />
+        <di:waypoint x="882" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1rzo6jz_di" bpmnElement="Flow_1rzo6jz">
+        <di:waypoint x="810" y="290" />
+        <di:waypoint x="846" y="290" />
+        <di:waypoint x="846" y="177" />
+        <di:waypoint x="882" y="177" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
