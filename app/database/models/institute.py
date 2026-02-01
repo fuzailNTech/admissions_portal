@@ -80,6 +80,8 @@ class Institute(Base):
     workflow_definitions = relationship("WorkflowDefinition", back_populates="institute", cascade="all, delete-orphan")
     workflow_instances = relationship("WorkflowInstance", back_populates="institute", cascade="all, delete-orphan")
     campuses = relationship("Campus", back_populates="institute", cascade="all, delete-orphan")
+    programs = relationship("Program", back_populates="institute", cascade="all, delete-orphan")
+    admission_cycles = relationship("AdmissionCycle", back_populates="institute", cascade="all, delete-orphan")
     custom_form_fields = relationship("CustomFormField", back_populates="institute", cascade="all, delete-orphan")
 
 
@@ -134,12 +136,12 @@ class Campus(Base):
     
     # Relationships
     institute = relationship("Institute", back_populates="campuses")
-    programs = relationship("Program", back_populates="campus", cascade="all, delete-orphan")
-    admission_calendars = relationship("AdmissionCycle", back_populates="campus", cascade="all, delete-orphan")
+    campus_programs = relationship("CampusProgram", back_populates="campus", cascade="all, delete-orphan")
+    campus_admission_cycles = relationship("CampusAdmissionCycle", back_populates="campus", cascade="all, delete-orphan")
 
 
 class Program(Base):
-    """Programs/degrees offered at a campus"""
+    """Programs/degrees offered by an institute"""
     __tablename__ = "programs"
 
     id = Column(
@@ -151,9 +153,9 @@ class Program(Base):
     )
     
     # Foreign Key
-    campus_id = Column(
+    institute_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("campuses.id", ondelete="CASCADE"),
+        ForeignKey("institutes.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
@@ -181,14 +183,64 @@ class Program(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    campus = relationship("Campus", back_populates="programs")
-    calendar_programs = relationship("ProgramAdmissionCycle", back_populates="program")
+    institute = relationship("Institute", back_populates="programs")
+    campus_programs = relationship("CampusProgram", back_populates="program", cascade="all, delete-orphan")
+    program_form_fields = relationship("ProgramFormField", back_populates="program", cascade="all, delete-orphan")
+    program_admission_cycles = relationship("ProgramAdmissionCycle", back_populates="program")
     
     # Constraints
     __table_args__ = (
-        UniqueConstraint("campus_id", "code", name="uq_campus_program_code"),
-        Index("ix_program_campus_code", "campus_id", "code"),
+        UniqueConstraint("institute_id", "code", name="uq_institute_program_code"),
+        Index("ix_program_institute_code", "institute_id", "code"),
     )
 
     def __repr__(self):
-        return f"<Program(code='{self.code}', name='{self.name}', campus_id='{self.campus_id}')>"
+        return f"<Program(code='{self.code}', name='{self.name}', institute_id='{self.institute_id}')>"
+
+
+class CampusProgram(Base):
+    """Junction table for many-to-many relationship between Campuses and Programs"""
+    __tablename__ = "campus_programs"
+
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+    )
+    
+    # Foreign Keys
+    campus_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("campuses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    program_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("programs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    
+    # Status - program can be active/inactive at campus level
+    is_active = Column(Boolean, default=True, nullable=False)
+    
+    # Audit
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_by = Column(UUID(as_uuid=True), nullable=True)
+    
+    # Relationships
+    campus = relationship("Campus", back_populates="campus_programs")
+    program = relationship("Program", back_populates="campus_programs")
+    
+    # Constraints - each program can only be added once per campus
+    __table_args__ = (
+        UniqueConstraint("campus_id", "program_id", name="uq_campus_program"),
+        Index("ix_campus_program", "campus_id", "program_id"),
+    )
+    
+    def __repr__(self):
+        return f"<CampusProgram(campus_id='{self.campus_id}', program_id='{self.program_id}')>"

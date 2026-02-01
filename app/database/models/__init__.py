@@ -1,5 +1,5 @@
 # Import models in dependency order
-from app.database.models.institute import Institute, Campus, Program
+from app.database.models.institute import Institute, Campus, Program, CampusProgram
 from app.database.models.auth import User, UserRole, VerificationToken
 from app.database.models.workflow import (
     WorkflowCatalog,
@@ -8,6 +8,7 @@ from app.database.models.workflow import (
 )
 from app.database.models.admission import (
     AdmissionCycle,
+    CampusAdmissionCycle,
     ProgramAdmissionCycle,
     ProgramQuota,
     CustomFormField,
@@ -17,14 +18,16 @@ from app.database.models.admission import (
 __all__ = [
     "Institute",
     "Campus",
+    "Program",
+    "CampusProgram",
     "User",
     "UserRole",
     "VerificationToken",
     "WorkflowCatalog",
     "WorkflowDefinition",
     "WorkflowInstance",
-    "Program",
     "AdmissionCycle",
+    "CampusAdmissionCycle",
     "ProgramAdmissionCycle",
     "ProgramQuota",
     "CustomFormField",

@@ -66,7 +66,7 @@ class CampusResponse(BaseModel):
 
 # Program Schemas
 class ProgramCreate(BaseModel):
-    campus_id: UUID
+    institute_id: UUID
     name: str = Field(..., min_length=1, max_length=255)
     code: str = Field(..., min_length=1, max_length=50)
     level: str = Field(..., description="Intermediate, Bachelors, Masters, PhD")
@@ -90,13 +90,36 @@ class ProgramUpdate(BaseModel):
 
 class ProgramResponse(BaseModel):
     id: UUID
-    campus_id: UUID
+    institute_id: UUID
     name: str
     code: str
     level: str
     category: Optional[str]
     duration_years: Optional[int]
     description: Optional[str]
+    is_active: bool
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+# CampusProgram Schemas (Junction Table)
+class CampusProgramCreate(BaseModel):
+    campus_id: UUID
+    program_id: UUID
+    is_active: bool = True
+
+
+class CampusProgramUpdate(BaseModel):
+    is_active: Optional[bool] = None
+
+
+class CampusProgramResponse(BaseModel):
+    id: UUID
+    campus_id: UUID
+    program_id: UUID
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime]
