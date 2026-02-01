@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func
+from sqlalchemy import func, and_, or_
 from uuid import UUID
-from typing import Optional
+from typing import Optional, List
 
 from app.database.config.db import get_db
-from app.database.models.institute import Institute, Campus, Program
+from app.database.models.institute import Institute, Campus, Program, CampusProgram
 from app.database.models.admission import (
     AdmissionCycle,
+    CampusAdmissionCycle,
     ProgramAdmissionCycle,
     ProgramQuota,
     CustomFormField,
@@ -17,99 +18,153 @@ from app.schema.student.institutes import (
     InstituteBasicInfo,
     InstituteDetailedInfo,
     InstituteListResponse,
-    ProgramBasicInfo,
-    ProgramCycleDetail,
-    AdmissionCycleDetail,
+    CampusBasicInfo,
+    ActiveCycleInfo,
+    ActiveCycleDetail,
+    ProgramWithOfferings,
+    CampusOfferingDetail,
     QuotaDetail,
     CustomFormFieldDetail,
 )
 
 institute_router = APIRouter(
-    prefix="/institute",
-    tags=["Student Institutes Management"],
+    prefix="/institutes",
+    tags=["Student Institutes"],
 )
 
 
-# ==================== INSTITUTE ENDPOINTS ====================
+# ==================== HELPER FUNCTIONS ====================
+
+def get_active_cycle(db: Session, institute_id: UUID) -> Optional[AdmissionCycle]:
+    """Get the currently active/open admission cycle for an institute"""
+    return (
+        db.query(AdmissionCycle)
+        .filter(
+            AdmissionCycle.institute_id == institute_id,
+            AdmissionCycle.is_published == True,
+            AdmissionCycle.status.in_(["OPEN", "UPCOMING"])
+        )
+        .order_by(AdmissionCycle.application_start_date.desc())
+        .first()
+    )
 
 
-@institute_router.get("/list", response_model=InstituteListResponse)
+# ==================== ENDPOINTS ====================
+
+@institute_router.get("", response_model=InstituteListResponse)
 def list_institutes(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
-    city: Optional[str] = None,
-    province_state: Optional[str] = None,
-    institute_type: Optional[str] = None,
-    institute_level: Optional[str] = None,
-    campus_type: Optional[str] = None,
+    search: Optional[str] = Query(None, description="Search by institute name (case-insensitive)"),
+    institute_type: Optional[List[str]] = Query(None, description="Filter by institute type(s) - supports multiple values"),
+    campus_type: Optional[List[str]] = Query(None, description="Filter by campus type(s) - supports multiple values"),
+    province_state: Optional[List[str]] = Query(None, description="Filter by province(s)/state(s) - supports multiple values"),
+    city: Optional[List[str]] = Query(None, description="Filter by city/cities - supports multiple values"),
     db: Session = Depends(get_db),
 ):
     """
-    List all active institutes with their campuses.
-    Students can browse available institutes and campuses.
+    List all active institutes with basic information.
+    
+    Filters:
+    - search: Search by institute name (partial, case-insensitive)
+    - institute_type: Direct filter on institute (supports multiple values)
+    - campus_type, province_state, city: If ANY campus matches, include the institute (support multiple values)
+    
+    Examples:
+    - /institutes?search=government
+    - /institutes?city=Lahore&city=Karachi
+    - /institutes?campus_type=girls&province_state=Punjab
+    - /institutes?institute_type=government&institute_type=private
+    
+    Students can browse available institutes and filter by location/type.
     """
     # Base query - only active institutes
     query = db.query(Institute).filter(Institute.status == "active")
 
-    # Apply institute filters
-    if institute_type:
-        query = query.filter(Institute.institute_type == institute_type)
-    if institute_level:
-        query = query.filter(Institute.institute_level == institute_level)
+    # Search by name (partial match, case-insensitive)
+    if search:
+        query = query.filter(Institute.name.ilike(f"%{search}%"))
 
-    # Get total count
+    # Direct institute filter (supports multiple values)
+    if institute_type:
+        query = query.filter(Institute.institute_type.in_(institute_type))
+
+    # Campus-based filters: Include institute if ANY campus matches
+    if campus_type or province_state or city:
+        # Subquery to find institutes that have at least one matching campus
+        campus_subquery = db.query(Campus.institute_id).filter(
+            Campus.is_active == True
+        )
+        
+        if campus_type:
+            campus_subquery = campus_subquery.filter(Campus.campus_type.in_(campus_type))
+        if province_state:
+            campus_subquery = campus_subquery.filter(Campus.province_state.in_(province_state))
+        if city:
+            # For city, use OR condition with ILIKE for case-insensitive partial matching
+            from sqlalchemy import or_
+            city_conditions = [Campus.city.ilike(f"%{c.strip()}%") for c in city]
+            campus_subquery = campus_subquery.filter(or_(*city_conditions))
+        
+        # Filter institutes that have at least one matching campus
+        query = query.filter(Institute.id.in_(campus_subquery))
+
+    # Get total count after all filters
     total = query.count()
 
-    # Get institutes
+    # Get institutes with pagination
     institutes = query.order_by(Institute.name).offset(skip).limit(limit).all()
 
-    # Build response with campuses
+    # Build response
     institutes_data = []
     for institute in institutes:
-        # Get campuses with filters
-        campuses_query = db.query(Campus).filter(
-            Campus.institute_id == institute.id, Campus.is_active == True
-        )
-
-        # Apply campus filters
-        if city:
-            campuses_query = campuses_query.filter(Campus.city.ilike(f"%{city}%"))
-        if province_state:
-            campuses_query = campuses_query.filter(
-                Campus.province_state == province_state
+        # Get active cycle
+        active_cycle = get_active_cycle(db, institute.id)
+        active_cycle_info = None
+        if active_cycle:
+            active_cycle_info = ActiveCycleInfo(
+                id=active_cycle.id,
+                name=active_cycle.name,
+                academic_year=active_cycle.academic_year,
+                status=active_cycle.status,
+                application_start_date=active_cycle.application_start_date,
+                application_end_date=active_cycle.application_end_date,
+                is_published=active_cycle.is_published,
             )
-        if campus_type:
-            campuses_query = campuses_query.filter(Campus.campus_type == campus_type)
 
+        # Get ALL active campuses for this institute
+        # Important: Return ALL campuses, not just the filtered ones
+        # This gives students complete view of the institute
+        campuses_query = db.query(Campus).filter(
+            Campus.institute_id == institute.id,
+            Campus.is_active == True
+        )
+        
         campuses = campuses_query.all()
-
-        # Build campus basic info
-        from app.schema.student.institutes import CampusBasicInfo
-
+        
         campuses_data = [
             CampusBasicInfo(
                 id=campus.id,
                 name=campus.name,
-                campus_code=campus.campus_code,
                 campus_type=campus.campus_type,
                 city=campus.city,
-                province_state=campus.province_state,
-                country=campus.country,
                 is_active=campus.is_active,
             )
             for campus in campuses
         ]
 
-        institute_dict = {
-            "id": institute.id,
-            "name": institute.name,
-            "institute_code": institute.institute_code,
-            "institute_type": institute.institute_type,
-            "institute_level": institute.institute_level,
-            "status": institute.status,
-            "campuses": campuses_data,
-        }
-        institutes_data.append(InstituteBasicInfo(**institute_dict))
+        # Build institute data
+        institute_data = InstituteBasicInfo(
+            id=institute.id,
+            name=institute.name,
+            institute_code=institute.institute_code,
+            institute_type=institute.institute_type,
+            institute_level=institute.institute_level,
+            established_year=institute.established_year,
+            active_cycle=active_cycle_info,
+            campuses=campuses_data,
+        )
+        institutes_data.append(institute_data)
 
     return InstituteListResponse(total=total, institutes=institutes_data)
 
@@ -117,19 +172,25 @@ def list_institutes(
 @institute_router.get("/{institute_id}", response_model=InstituteDetailedInfo)
 def get_institute_details(
     institute_id: UUID,
-    campus_id: Optional[UUID] = Query(None, description="Filter by specific campus"),
-    calendar_id: Optional[UUID] = Query(
-        None, description="Filter by specific admission calendar"
-    ),
+    campus_type: Optional[List[str]] = Query(None, description="Filter by campus type(s) - supports multiple values"),
+    province_state: Optional[List[str]] = Query(None, description="Filter by province(s)/state(s) - supports multiple values"),
+    city: Optional[List[str]] = Query(None, description="Filter by city/cities - supports multiple values"),
     db: Session = Depends(get_db),
 ):
     """
     Get detailed information about an institute including:
     - Institute information
-    - Campuses with full admission details
-    - Programs per campus
-    - Admission calendars per campus
-    - Quotas and form fields
+    - Active admission cycle
+    - Programs with campus offerings, seats, and quotas
+    
+    Filters:
+    - campus_type, province_state, city: Filter campus offerings (supports multiple values)
+    - Only programs offered at matching campuses will be included
+    
+    Examples:
+    - /institutes/{id}?campus_type=girls
+    - /institutes/{id}?city=Lahore&city=Karachi
+    - /institutes/{id}?campus_type=girls&province_state=Punjab
     """
     # Get institute
     institute = (
@@ -144,163 +205,213 @@ def get_institute_details(
             detail="Institute not found or not active",
         )
 
-    # Get active campuses
-    campuses_query = db.query(Campus).filter(
-        Campus.institute_id == institute_id, Campus.is_active == True
-    )
-
-    if campus_id:
-        campuses_query = campuses_query.filter(Campus.id == campus_id)
-
-    campuses = campuses_query.all()
-
-    # Build detailed campus info
-    from app.schema.student.institutes import CampusDetailedInfo
-
-    campuses_detailed = []
-
-    for campus in campuses:
-        # Get published cycles for this campus
-        cycles_query = db.query(AdmissionCycle).filter(
-            AdmissionCycle.campus_id == campus.id, AdmissionCycle.is_published == True
+    # Get active cycle
+    active_cycle = get_active_cycle(db, institute_id)
+    
+    if not active_cycle:
+        # No active admissions - return institute info with empty programs
+        return InstituteDetailedInfo(
+            id=institute.id,
+            name=institute.name,
+            institute_code=institute.institute_code,
+            institute_type=institute.institute_type,
+            institute_level=institute.institute_level,
+            established_year=institute.established_year,
+            regulatory_body=institute.regulatory_body,
+            registration_number=institute.registration_number,
+            primary_email=institute.primary_email,
+            primary_phone=institute.primary_phone,
+            website_url=institute.website_url,
+            active_cycle=None,
+            programs=[],
         )
 
-        if calendar_id:
-            cycles_query = cycles_query.filter(AdmissionCycle.id == calendar_id)
+    # Build active cycle detail
+    active_cycle_detail = ActiveCycleDetail(
+        id=active_cycle.id,
+        name=active_cycle.name,
+        academic_year=active_cycle.academic_year,
+        session=active_cycle.session,
+        status=active_cycle.status,
+        application_start_date=active_cycle.application_start_date,
+        application_end_date=active_cycle.application_end_date,
+        description=active_cycle.description,
+    )
 
-        cycles = cycles_query.order_by(AdmissionCycle.created_at.desc()).all()
+    # Get all programs for this institute
+    programs = (
+        db.query(Program)
+        .filter(Program.institute_id == institute_id, Program.is_active == True)
+        .all()
+    )
 
-        # Build cycle details for this campus
-        cycle_details = [
-            AdmissionCycleDetail(
-                id=cycle.id,
-                name=cycle.name,
-                academic_year=cycle.academic_year,
-                session=cycle.session,
-                status=cycle.status,
-                application_start_date=cycle.application_start_date,
-                application_end_date=cycle.application_end_date,
-                description=cycle.description,
-                is_published=cycle.is_published,
+    programs_data = []
+    
+    for program in programs:
+        # Get form fields for this program
+        program_form_fields = (
+            db.query(ProgramFormField)
+            .join(CustomFormField)
+            .filter(
+                ProgramFormField.program_id == program.id,
+                CustomFormField.is_active == True
             )
-            for cycle in cycles
+            .order_by(ProgramFormField.display_order)
+            .all()
+        )
+
+        form_fields_data = [
+            CustomFormFieldDetail(
+                id=pff.form_field.id,
+                field_name=pff.form_field.field_name,
+                label=pff.form_field.label,
+                field_type=pff.form_field.field_type,
+                placeholder=pff.form_field.placeholder,
+                help_text=pff.form_field.help_text,
+                default_value=pff.form_field.default_value,
+                min_length=pff.form_field.min_length,
+                max_length=pff.form_field.max_length,
+                min_value=pff.form_field.min_value,
+                max_value=pff.form_field.max_value,
+                pattern=pff.form_field.pattern,
+                options=pff.form_field.options or [],
+                is_required=pff.is_required,
+                display_order=pff.display_order,
+            )
+            for pff in program_form_fields
         ]
 
-        # Get programs for this campus
-        programs_data = []
+        # Get campus offerings for this program in the active cycle
+        campus_offerings_data = []
 
-        for cycle in cycles:
-            # Get cycle programs
-            cycle_programs = (
-                db.query(ProgramAdmissionCycle)
-                .options(
-                    joinedload(ProgramAdmissionCycle.program),
-                    joinedload(ProgramAdmissionCycle.quotas),
-                    joinedload(ProgramAdmissionCycle.program_form_fields).joinedload(
-                        ProgramFormField.form_field
-                    ),
-                )
+        # Get all campuses offering this program (with optional filters)
+        campus_query = (
+            db.query(CampusProgram)
+            .join(Campus)
+            .filter(
+                CampusProgram.program_id == program.id,
+                CampusProgram.is_active == True,
+                Campus.is_active == True
+            )
+        )
+        
+        # Apply campus filters if provided
+        if campus_type:
+            campus_query = campus_query.filter(Campus.campus_type.in_(campus_type))
+        
+        if province_state:
+            campus_query = campus_query.filter(Campus.province_state.in_(province_state))
+        
+        if city:
+            # For city, use OR condition with ILIKE for case-insensitive partial matching
+            city_conditions = [Campus.city.ilike(f"%{c.strip()}%") for c in city]
+            campus_query = campus_query.filter(or_(*city_conditions))
+        
+        campus_programs = campus_query.all()
+
+        for campus_program in campus_programs:
+            campus = campus_program.campus
+            
+            # Check if campus is participating in this cycle
+            campus_cycle = (
+                db.query(CampusAdmissionCycle)
                 .filter(
-                    ProgramAdmissionCycle.admission_cycle_id == cycle.id,
-                    ProgramAdmissionCycle.is_active == True,
+                    CampusAdmissionCycle.campus_id == campus.id,
+                    CampusAdmissionCycle.admission_cycle_id == active_cycle.id
                 )
+                .first()
+            )
+
+            if not campus_cycle:
+                continue  # Campus not participating in this cycle
+ 
+            # Get program admission cycle (seats allocation)
+            program_cycle = (
+                db.query(ProgramAdmissionCycle)
+                .filter(
+                    ProgramAdmissionCycle.campus_admission_cycle_id == campus_cycle.id,
+                    ProgramAdmissionCycle.program_id == program.id,
+                    ProgramAdmissionCycle.is_active == True
+                )
+                .first()
+            )
+
+            if not program_cycle:
+                continue  # Program not offered at this campus for this cycle
+
+            # Get quotas
+            quotas = (
+                db.query(ProgramQuota)
+                .filter(ProgramQuota.program_cycle_id == program_cycle.id)
+                .order_by(ProgramQuota.priority_order)
                 .all()
             )
 
-            for cp in cycle_programs:
-                # Calculate seats available
-                seats_available = cp.total_seats - cp.seats_filled
-
-                # Get quotas with availability
-                quota_details = [
-                    QuotaDetail(
-                        id=quota.id,
-                        quota_type=quota.quota_type,
-                        quota_name=quota.quota_name,
-                        allocated_seats=quota.allocated_seats,
-                        seats_filled=quota.seats_filled,
-                        seats_available=quota.allocated_seats - quota.seats_filled,
-                        minimum_marks=quota.minimum_marks,
-                        priority_order=quota.priority_order,
-                        status=quota.status,
-                        description=quota.description,
-                        eligibility_requirements=quota.eligibility_requirements,
-                        required_documents=quota.required_documents,
-                    )
-                    for quota in (cp.quotas or [])
-                ]
-
-                # Get custom form fields
-                form_fields = [
-                    CustomFormFieldDetail(
-                        id=pff.form_field.id,
-                        field_name=pff.form_field.field_name,
-                        label=pff.form_field.label,
-                        field_type=pff.form_field.field_type,
-                        placeholder=pff.form_field.placeholder,
-                        help_text=pff.form_field.help_text,
-                        default_value=pff.form_field.default_value,
-                        min_length=pff.form_field.min_length,
-                        max_length=pff.form_field.max_length,
-                        min_value=pff.form_field.min_value,
-                        max_value=pff.form_field.max_value,
-                        pattern=pff.form_field.pattern,
-                        options=pff.form_field.options,
-                        is_required=pff.is_required,
-                    )
-                    for pff in (cp.program_form_fields or [])
-                ]
-
-                program_detail = ProgramCycleDetail(
-                    id=cp.id,
-                    program_id=cp.program.id,
-                    program_name=cp.program.name,
-                    program_code=cp.program.code,
-                    program_level=cp.program.level,
-                    program_category=cp.program.category,
-                    total_seats=cp.total_seats,
-                    seats_filled=cp.seats_filled,
-                    seats_available=seats_available,
-                    minimum_marks_required=cp.minimum_marks_required,
-                    eligibility_criteria=cp.eligibility_criteria,
-                    description=cp.description,
-                    quotas=quota_details,
-                    custom_form_fields=form_fields,
-                    is_active=cp.is_active,
+            quotas_data = [
+                QuotaDetail(
+                    id=quota.id,
+                    quota_type=quota.quota_type,
+                    quota_name=quota.quota_name,
+                    allocated_seats=quota.allocated_seats,
+                    seats_filled=quota.seats_filled,
+                    seats_available=quota.allocated_seats - quota.seats_filled,
+                    minimum_marks=quota.minimum_marks,
+                    priority_order=quota.priority_order,
+                    status=quota.status,
+                    description=quota.description,
+                    eligibility_requirements=quota.eligibility_requirements or {},
+                    required_documents=quota.required_documents or [],
                 )
-                programs_data.append(program_detail)
+                for quota in quotas
+            ]
 
-        # Build detailed campus info
-        campus_detailed = CampusDetailedInfo(
-            id=campus.id,
-            name=campus.name,
-            campus_code=campus.campus_code,
-            campus_type=campus.campus_type,
-            country=campus.country,
-            province_state=campus.province_state,
-            city=campus.city,
-            postal_code=campus.postal_code,
-            address_line=campus.address_line,
-            campus_email=campus.campus_email,
-            campus_phone=campus.campus_phone,
-            admission_cycles=cycle_details,
-            programs=programs_data,
-        )
-        campuses_detailed.append(campus_detailed)
+            # Build campus offering
+            campus_offering = CampusOfferingDetail(
+                campus_id=campus.id,
+                campus_name=campus.name,
+                campus_type=campus.campus_type,
+                campus_code=campus.campus_code,
+                city=campus.city,
+                address_line=campus.address_line,
+                campus_phone=campus.campus_phone,
+                campus_email=campus.campus_email,
+                admission_open=campus_cycle.is_open,
+                closure_reason=campus_cycle.closure_reason,
+                total_seats=program_cycle.total_seats,
+                seats_filled=program_cycle.seats_filled,
+                seats_available=program_cycle.total_seats - program_cycle.seats_filled,
+                quotas=quotas_data,
+            )
+            campus_offerings_data.append(campus_offering)
 
-    # Build response
+        # Only include program if it has at least one campus offering
+        if campus_offerings_data:
+            program_data = ProgramWithOfferings(
+                id=program.id,
+                name=program.name,
+                code=program.code,
+                level=program.level,
+                category=program.category,
+                duration_years=program.duration_years,
+                description=program.description,
+                custom_form_fields=form_fields_data,
+                campus_offerings=campus_offerings_data,
+            )
+            programs_data.append(program_data)
+
+    # Build final response
     return InstituteDetailedInfo(
         id=institute.id,
         name=institute.name,
         institute_code=institute.institute_code,
         institute_type=institute.institute_type,
         institute_level=institute.institute_level,
-        status=institute.status,
-        registration_number=institute.registration_number,
-        regulatory_body=institute.regulatory_body,
         established_year=institute.established_year,
+        regulatory_body=institute.regulatory_body,
+        registration_number=institute.registration_number,
         primary_email=institute.primary_email,
         primary_phone=institute.primary_phone,
         website_url=institute.website_url,
-        campuses=campuses_detailed,
+        active_cycle=active_cycle_detail,
+        programs=programs_data,
     )

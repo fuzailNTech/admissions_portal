@@ -60,8 +60,62 @@ class QuotaStatus(str, enum.Enum):
 
 
 class AdmissionCycle(Base):
-    """Manages admission cycles/calendars for institutes"""
-    __tablename__ = "admission_calendars"
+    """Institute-wide admission cycles/calendars"""
+    __tablename__ = "admission_cycles"
+
+    # Core Identity
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+    )
+
+    # Foreign Keys
+    institute_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("institutes.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    # Cycle Information
+    name = Column(String, nullable=False)  # e.g., "Admissions 2026", "Intermediate 2026-27"
+    academic_year = Column(String, nullable=False, index=True)  # e.g., "2026-27", "2026"
+    session = Column(SQLEnum(AcademicSession), default=AcademicSession.ANNUAL, nullable=False)
+    status = Column(SQLEnum(AdmissionCycleStatus), default=AdmissionCycleStatus.DRAFT, nullable=False, index=True)
+    
+    # Institute-wide dates (apply to all campuses by default)
+    application_start_date = Column(DateTime(timezone=True), nullable=False)
+    application_end_date = Column(DateTime(timezone=True), nullable=False)
+    
+    description = Column(Text, nullable=True)  # General details about the admission cycle
+    custom_metadata = Column(JSONB, default=dict, nullable=False)
+    is_published = Column(Boolean, default=False, nullable=False)  # Visible to public
+
+    # Audit
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_by = Column(UUID(as_uuid=True), nullable=True)
+
+    # Relationships
+    institute = relationship("Institute", back_populates="admission_cycles")
+    campus_cycles = relationship("CampusAdmissionCycle", back_populates="admission_cycle", cascade="all, delete-orphan")
+
+    # Constraints / Indexes
+    __table_args__ = (
+        Index("ix_cycle_institute_year", "institute_id", "academic_year"),
+        Index("ix_cycle_status_published", "status", "is_published"),
+    )
+
+    def __repr__(self):
+        return f"<AdmissionCycle(name='{self.name}', year='{self.academic_year}', status='{self.status}')>"
+
+
+class CampusAdmissionCycle(Base):
+    """Junction table: Links campuses to admission cycles with campus-specific controls"""
+    __tablename__ = "campus_admission_cycles"
 
     # Core Identity
     id = Column(
@@ -79,17 +133,19 @@ class AdmissionCycle(Base):
         nullable=False,
         index=True
     )
+    admission_cycle_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("admission_cycles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
 
-    # Cycle Information
-    name = Column(String, nullable=False)  # e.g., "Admissions 2026", "Intermediate 2026-27"
-    academic_year = Column(String, nullable=False, index=True)  # e.g., "2026-27", "2026"
-    session = Column(SQLEnum(AcademicSession), default=AcademicSession.ANNUAL, nullable=False)
-    status = Column(SQLEnum(AdmissionCycleStatus), default=AdmissionCycleStatus.DRAFT, nullable=False, index=True)
-    application_start_date = Column(DateTime(timezone=True), nullable=False)
-    application_end_date = Column(DateTime(timezone=True), nullable=False)
-    description = Column(Text, nullable=True)  # General details about the admission cycle
+    # Campus-specific controls
+    is_open = Column(Boolean, default=True, nullable=False)  # Can close campus independently
+    closure_reason = Column(String, nullable=True)  # Why is this campus closed? (e.g., "Capacity reached", "Emergency")
+    
+    # Flexible metadata for campus-specific settings
     custom_metadata = Column(JSONB, default=dict, nullable=False)
-    is_published = Column(Boolean, default=False, nullable=False)  # Visible to public
 
     # Audit
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -97,22 +153,23 @@ class AdmissionCycle(Base):
     created_by = Column(UUID(as_uuid=True), nullable=True)
 
     # Relationships
-    campus = relationship("Campus", back_populates="admission_calendars")
-    programs = relationship("ProgramAdmissionCycle", back_populates="calendar", cascade="all, delete-orphan")
+    campus = relationship("Campus", back_populates="campus_admission_cycles")
+    admission_cycle = relationship("AdmissionCycle", back_populates="campus_cycles")
+    program_cycles = relationship("ProgramAdmissionCycle", back_populates="campus_admission_cycle", cascade="all, delete-orphan")
 
-    # Constraints / Indexes
+    # Constraints
     __table_args__ = (
-        Index("ix_calendar_campus_year", "campus_id", "academic_year"),
-        Index("ix_calendar_status_published", "status", "is_published"),
+        UniqueConstraint("campus_id", "admission_cycle_id", name="uq_campus_admission_cycle"),
+        Index("ix_campus_cycle", "campus_id", "admission_cycle_id"),
     )
 
     def __repr__(self):
-        return f"<AdmissionCycle(name='{self.name}', year='{self.academic_year}', status='{self.status}')>"
+        return f"<CampusAdmissionCycle(campus_id='{self.campus_id}', cycle_id='{self.admission_cycle_id}', is_open={self.is_open})>"
 
 
 class ProgramAdmissionCycle(Base):
-    """Junction table: Links programs to calendars with program-specific settings"""
-    __tablename__ = "admission_calendar_programs"
+    """Program offerings for a specific cycle at a specific campus (seat allocation)"""
+    __tablename__ = "program_admission_cycles"
 
     id = Column(
         UUID(as_uuid=True),
@@ -123,9 +180,9 @@ class ProgramAdmissionCycle(Base):
     )
 
     # Foreign Keys
-    admission_cycle_id = Column(
+    campus_admission_cycle_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("admission_calendars.id", ondelete="CASCADE"),
+        ForeignKey("campus_admission_cycles.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
@@ -136,10 +193,11 @@ class ProgramAdmissionCycle(Base):
         index=True
     )
 
-    total_seats = Column(Integer, nullable=False)  # Total seats for this program in this cycle
+    # Seat Allocation
+    total_seats = Column(Integer, nullable=False)  # Total seats for this program at this campus for this cycle
     seats_filled = Column(Integer, default=0, nullable=False)
-    minimum_marks_required = Column(Integer, nullable=True)
-    eligibility_criteria = Column(JSONB, default=dict, nullable=False)
+    
+    # Details
     description = Column(Text, nullable=True)  # Program-specific details for this cycle
     custom_metadata = Column(JSONB, default=dict, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
@@ -149,15 +207,35 @@ class ProgramAdmissionCycle(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    calendar = relationship("AdmissionCycle", back_populates="programs")
-    program = relationship("Program", back_populates="calendar_programs")
-    quotas = relationship("ProgramQuota", back_populates="calendar_program", cascade="all, delete-orphan")
-    program_form_fields = relationship("ProgramFormField", back_populates="calendar_program", cascade="all, delete-orphan")
+    campus_admission_cycle = relationship("CampusAdmissionCycle", back_populates="program_cycles")
+    program = relationship("Program", back_populates="program_admission_cycles")
+    quotas = relationship("ProgramQuota", back_populates="program_cycle", cascade="all, delete-orphan")
+
+    # Helper properties for easier access
+    @property
+    def admission_cycle_id(self):
+        """Get admission_cycle_id through the campus_admission_cycle relationship"""
+        return self.campus_admission_cycle.admission_cycle_id if self.campus_admission_cycle else None
+    
+    @property
+    def campus_id(self):
+        """Get campus_id through the campus_admission_cycle relationship"""
+        return self.campus_admission_cycle.campus_id if self.campus_admission_cycle else None
+    
+    @property
+    def admission_cycle(self):
+        """Get admission_cycle through the campus_admission_cycle relationship"""
+        return self.campus_admission_cycle.admission_cycle if self.campus_admission_cycle else None
+    
+    @property
+    def campus(self):
+        """Get campus through the campus_admission_cycle relationship"""
+        return self.campus_admission_cycle.campus if self.campus_admission_cycle else None
 
     # Constraints
     __table_args__ = (
-        UniqueConstraint("admission_cycle_id", "program_id", name="uq_cycle_program"),
-        Index("ix_cycle_program_active", "admission_cycle_id", "is_active"),
+        UniqueConstraint("campus_admission_cycle_id", "program_id", name="uq_campus_cycle_program"),
+        Index("ix_campus_cycle_program_active", "campus_admission_cycle_id", "program_id", "is_active"),
     )
 
     @validates("seats_filled")
@@ -168,7 +246,7 @@ class ProgramAdmissionCycle(Base):
         return value
 
     def __repr__(self):
-        return f"<ProgramAdmissionCycle(program_id='{self.program_id}', seats={self.seats_filled}/{self.total_seats})>"
+        return f"<ProgramAdmissionCycle(campus_cycle='{self.campus_admission_cycle_id}', program='{self.program_id}', seats={self.seats_filled}/{self.total_seats})>"
 
 
 class ProgramQuota(Base):
@@ -186,7 +264,7 @@ class ProgramQuota(Base):
     # Foreign Key
     program_cycle_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("admission_calendar_programs.id", ondelete="CASCADE"),
+        ForeignKey("program_admission_cycles.id", ondelete="CASCADE"),  
         nullable=False,
         index=True
     )
@@ -311,7 +389,7 @@ class CustomFormField(Base):
 
 
 class ProgramFormField(Base):
-    """Junction table: Links custom form fields to program calendars"""
+    """Junction table: Links custom form fields to programs (institute-level)"""
     __tablename__ = "program_form_fields"
 
     id = Column(
@@ -323,9 +401,9 @@ class ProgramFormField(Base):
     )
 
     # Foreign Keys
-    program_cycle_id = Column(
+    program_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("admission_calendar_programs.id", ondelete="CASCADE"),
+        ForeignKey("programs.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
@@ -336,21 +414,23 @@ class ProgramFormField(Base):
         index=True
     )
 
-    # Program-specific overrides
-    is_required = Column(Boolean, default=False, nullable=False)  # Can override requirement
+    # Field Settings
+    is_required = Column(Boolean, default=False, nullable=False)
+    display_order = Column(Integer, default=0, nullable=False)  # For ordering fields in forms
 
     # Audit
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    program_cycle = relationship("ProgramAdmissionCycle", back_populates="program_form_fields")
+    program = relationship("Program", back_populates="program_form_fields")
     form_field = relationship("CustomFormField", back_populates="program_form_fields")
 
     # Constraints
     __table_args__ = (
-        UniqueConstraint("program_cycle_id", "form_field_id", name="uq_program_cycle_form_field"),
+        UniqueConstraint("program_id", "form_field_id", name="uq_program_form_field"),
+        Index("ix_program_field", "program_id", "form_field_id"),
     )
 
     def __repr__(self):
-        return f"<ProgramFormField(program_cycle_id='{self.program_cycle_id}', field_id='{self.form_field_id}', required={self.is_required})>"
+        return f"<ProgramFormField(program_id='{self.program_id}', field_id='{self.form_field_id}', required={self.is_required})>"
