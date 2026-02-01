@@ -76,7 +76,7 @@ class Institute(Base):
     created_by = Column(UUID(as_uuid=True), nullable=True)  # Reference to admin user
 
     # Relationships
-    users = relationship("User", back_populates="institute")
+    staff_profiles = relationship("StaffProfile", back_populates="institute", cascade="all, delete-orphan")
     workflow_definitions = relationship("WorkflowDefinition", back_populates="institute", cascade="all, delete-orphan")
     workflow_instances = relationship("WorkflowInstance", back_populates="institute", cascade="all, delete-orphan")
     campuses = relationship("Campus", back_populates="institute", cascade="all, delete-orphan")
@@ -136,6 +136,7 @@ class Campus(Base):
     
     # Relationships
     institute = relationship("Institute", back_populates="campuses")
+    staff_assignments = relationship("StaffCampus", back_populates="campus", cascade="all, delete-orphan")
     campus_programs = relationship("CampusProgram", back_populates="campus", cascade="all, delete-orphan")
     campus_admission_cycles = relationship("CampusAdmissionCycle", back_populates="campus", cascade="all, delete-orphan")
 

@@ -7,7 +7,6 @@ from typing import Optional, List
 from app.database.config.db import get_db
 from app.database.models.institute import Institute, Campus, Program, CampusProgram
 from app.database.models.admission import (
-    AdmissionCycle,
     CampusAdmissionCycle,
     ProgramAdmissionCycle,
     ProgramQuota,
@@ -26,27 +25,12 @@ from app.schema.student.institutes import (
     QuotaDetail,
     CustomFormFieldDetail,
 )
+from app.utils.admission import get_active_cycle
 
 institute_router = APIRouter(
     prefix="/institutes",
     tags=["Student Institutes"],
 )
-
-
-# ==================== HELPER FUNCTIONS ====================
-
-def get_active_cycle(db: Session, institute_id: UUID) -> Optional[AdmissionCycle]:
-    """Get the currently active/open admission cycle for an institute"""
-    return (
-        db.query(AdmissionCycle)
-        .filter(
-            AdmissionCycle.institute_id == institute_id,
-            AdmissionCycle.is_published == True,
-            AdmissionCycle.status.in_(["OPEN", "UPCOMING"])
-        )
-        .order_by(AdmissionCycle.application_start_date.desc())
-        .first()
-    )
 
 
 # ==================== ENDPOINTS ====================
@@ -102,7 +86,6 @@ def list_institutes(
             campus_subquery = campus_subquery.filter(Campus.province_state.in_(province_state))
         if city:
             # For city, use OR condition with ILIKE for case-insensitive partial matching
-            from sqlalchemy import or_
             city_conditions = [Campus.city.ilike(f"%{c.strip()}%") for c in city]
             campus_subquery = campus_subquery.filter(or_(*city_conditions))
         

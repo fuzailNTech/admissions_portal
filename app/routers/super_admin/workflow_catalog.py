@@ -13,7 +13,7 @@ from app.schema.super_admin.workflow_catalog import (
     SubworkflowResponse,
     SubworkflowDetailResponse,
 )
-from app.utils.auth import require_super_admin
+from app.utils.auth import get_current_active_user
 import json
 from app.bpm.engine import load_spec_from_xml
 
@@ -29,7 +29,7 @@ workflow_catalog_router = APIRouter(
 def create_subworkflow(
     subworkflow: SubworkflowCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Create a new subworkflow in the catalog.
@@ -142,7 +142,7 @@ def update_subworkflow(
     subworkflow_id: UUID,
     subworkflow_update: SubworkflowUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Update a subworkflow.
