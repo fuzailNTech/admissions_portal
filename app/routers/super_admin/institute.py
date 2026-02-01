@@ -12,7 +12,7 @@ from app.schema.super_admin.institute import (
     InstituteUpdate,
     InstituteResponse,
 )
-from app.utils.auth import require_super_admin
+from app.utils.auth import get_current_active_user
 import re
 
 institute_router = APIRouter(
@@ -33,7 +33,7 @@ def generate_slug(name: str) -> str:
 def create_institute(
     institute: InstituteCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Create a new institute.
@@ -131,7 +131,7 @@ def update_institute(
     institute_id: UUID,
     institute_update: InstituteUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Update an institute.
@@ -187,7 +187,7 @@ def update_institute(
 def delete_institute(
     institute_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Delete an institute.

@@ -2,7 +2,7 @@ import secrets
 from datetime import datetime
 from sqlalchemy.orm import Session
 from SpiffWorkflow.task import Task
-from app.database.models.auth import VerificationToken, User
+from app.database.models.auth import User
 from app.database.models.workflow import WorkflowInstance
 from app.bpm.handlers.config import service_task
 
@@ -82,10 +82,6 @@ def handle_send_application_received_email(
     token = secrets.token_urlsafe(32)
     verify_url = f"https://example.com/verify?token={token}"
 
-    # Store token in database (if needed)
-    # verification_token = VerificationToken(...)
-    # db.add(verification_token)
-    # db.commit()
 
     # Update workflow data
     workflow_data["email_sent"] = True

@@ -6,7 +6,7 @@ from app.database.config.db import Base
 from app.settings import DATABASE_URL
 
 from app.database.models.institute import Institute
-from app.database.models.auth import User, UserRole, VerificationToken
+from app.database.models.auth import User
 from app.database.models.workflow import (
     WorkflowCatalog,
     WorkflowDefinition,
