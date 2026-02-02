@@ -31,12 +31,13 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Create a JWT access token."""
+    print("Creating access token with data:", data)
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
     return encoded_jwt
@@ -52,8 +53,7 @@ def decode_access_token(token: str) -> Optional[dict]:
 
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ) -> User:
     """
     Get the current authenticated user from JWT token.
@@ -63,31 +63,30 @@ def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+    print("Token received:", token)
     payload = decode_access_token(token)
+    print("Decoded payload:", payload)
     if payload is None:
         raise credentials_exception
-    
+
     user_id: str = payload.get("sub")
     if user_id is None:
         raise credentials_exception
-    
+
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
         raise credentials_exception
-    
+
     if not user.verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is not verified",
         )
-    
+
     return user
 
 
-def get_current_active_user(
-    current_user: User = Depends(get_current_user)
-) -> User:
+def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
     """
     Get the current active user (wrapper for get_current_user).
     """
@@ -96,48 +95,46 @@ def get_current_active_user(
 
 # ==================== RBAC HELPER FUNCTIONS ====================
 
+
 def get_current_staff(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ) -> StaffProfile:
     """
     Get the current staff profile.
     Raises 403 if user doesn't have an active staff profile.
-    
+
     Use this as a dependency to ensure user is staff.
     """
-    staff_profile = db.query(StaffProfile).filter(
-        StaffProfile.user_id == current_user.id
-    ).first()
-    
+    staff_profile = (
+        db.query(StaffProfile).filter(StaffProfile.user_id == current_user.id).first()
+    )
+
     if not staff_profile or not staff_profile.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Staff access required",
         )
-    
+
     return staff_profile
 
 
 def is_super_admin(user: User) -> bool:
     """
     Check if user is a super admin.
-    
+
     Args:
         user: User object
-        
+
     Returns:
         True if user is super admin and active, False otherwise
     """
     return user.is_super_admin and user.is_active
 
 
-def require_super_admin(
-    current_user: User = Depends(get_current_user)
-) -> User:
+def require_super_admin(current_user: User = Depends(get_current_user)) -> User:
     """
     Dependency to require super admin access.
-    
+
     Usage:
         @router.get("/endpoint")
         def endpoint(user: User = Depends(require_super_admin)):
@@ -152,11 +149,11 @@ def require_super_admin(
 
 
 def is_institute_admin(
-    current_staff: StaffProfile = Depends(get_current_staff)
+    current_staff: StaffProfile = Depends(get_current_staff),
 ) -> StaffProfile:
     """
     Dependency to require institute admin role.
-    
+
     Usage:
         @router.get("/endpoint")
         def endpoint(staff: StaffProfile = Depends(is_institute_admin)):
@@ -172,11 +169,11 @@ def is_institute_admin(
 
 
 def is_campus_admin(
-    current_staff: StaffProfile = Depends(get_current_staff)
+    current_staff: StaffProfile = Depends(get_current_staff),
 ) -> StaffProfile:
     """
     Dependency to require campus admin role.
-    
+
     Usage:
         @router.get("/endpoint")
         def endpoint(staff: StaffProfile = Depends(is_campus_admin)):
@@ -191,47 +188,39 @@ def is_campus_admin(
     return current_staff
 
 
-def get_user_institute(
-    staff: StaffProfile,
-    db: Session
-) -> Optional[Institute]:
+def get_user_institute(staff: StaffProfile, db: Session) -> Optional[Institute]:
     """
     Get the institute for a staff member.
-    
+
     Args:
         staff: StaffProfile object
         db: Database session
-        
+
     Returns:
         Institute object or None if not found
-        
+
     Usage:
         institute = get_user_institute(staff, db)
         if not institute:
             raise HTTPException(404, "Institute not found")
     """
-    return db.query(Institute).filter(
-        Institute.id == staff.institute_id
-    ).first()
+    return db.query(Institute).filter(Institute.id == staff.institute_id).first()
 
 
-def get_accessible_campuses(
-    staff: StaffProfile,
-    db: Session
-) -> List[Campus]:
+def get_accessible_campuses(staff: StaffProfile, db: Session) -> List[Campus]:
     """
     Get all campuses accessible by a staff member.
-    
+
     - Institute Admin: Returns ALL campuses in their institute
     - Campus Admin: Returns ONLY assigned campuses
-    
+
     Args:
         staff: StaffProfile object
         db: Database session
-        
+
     Returns:
         List of Campus objects
-        
+
     Usage:
         campuses = get_accessible_campuses(staff, db)
         for campus in campuses:
@@ -239,19 +228,25 @@ def get_accessible_campuses(
     """
     if staff.role == StaffRoleType.INSTITUTE_ADMIN:
         # Institute admin has access to all campuses in their institute
-        return db.query(Campus).filter(
-            Campus.institute_id == staff.institute_id,
-            Campus.is_active == True
-        ).all()
-    
+        return (
+            db.query(Campus)
+            .filter(Campus.institute_id == staff.institute_id, Campus.is_active == True)
+            .all()
+        )
+
     elif staff.role == StaffRoleType.CAMPUS_ADMIN:
         # Campus admin has access only to assigned campuses
-        return db.query(Campus).join(StaffCampus).filter(
-            StaffCampus.staff_profile_id == staff.id,
-            StaffCampus.is_active == True,
-            Campus.is_active == True
-        ).all()
-    
+        return (
+            db.query(Campus)
+            .join(StaffCampus)
+            .filter(
+                StaffCampus.staff_profile_id == staff.id,
+                StaffCampus.is_active == True,
+                Campus.is_active == True,
+            )
+            .all()
+        )
+
     return []
 
 
@@ -261,11 +256,11 @@ def can_access_institute(
 ) -> bool:
     """
     Check if staff member can access a specific institute.
-    
+
     Args:
         institute_id: UUID of the institute to check
         current_staff: StaffProfile object
-        
+
     Returns:
         True if staff can access the institute, False otherwise
     """
@@ -273,18 +268,16 @@ def can_access_institute(
 
 
 def can_access_campus(
-    campus_id: UUID,
-    current_staff: StaffProfile,
-    db: Session
+    campus_id: UUID, current_staff: StaffProfile, db: Session
 ) -> bool:
     """
     Check if staff member can access a specific campus.
-    
+
     Args:
         campus_id: UUID of the campus to check
         current_staff: StaffProfile object
         db: Database session
-        
+
     Returns:
         True if staff can access the campus, False otherwise
     """
@@ -292,31 +285,35 @@ def can_access_campus(
     campus = db.query(Campus).filter(Campus.id == campus_id).first()
     if not campus:
         return False
-    
+
     # Staff must belong to the same institute
     if campus.institute_id != current_staff.institute_id:
         return False
-    
+
     # Institute admin has access to all campuses in their institute
     if current_staff.role == StaffRoleType.INSTITUTE_ADMIN:
         return True
-    
+
     # Campus admin needs explicit assignment
     if current_staff.role == StaffRoleType.CAMPUS_ADMIN:
-        assignment = db.query(StaffCampus).filter(
-            StaffCampus.staff_profile_id == current_staff.id,
-            StaffCampus.campus_id == campus_id,
-            StaffCampus.is_active == True
-        ).first()
+        assignment = (
+            db.query(StaffCampus)
+            .filter(
+                StaffCampus.staff_profile_id == current_staff.id,
+                StaffCampus.campus_id == campus_id,
+                StaffCampus.is_active == True,
+            )
+            .first()
+        )
         return assignment is not None
-    
+
     return False
 
 
 def require_institute_access(institute_id: UUID):
     """
     Dependency factory to require access to a specific institute.
-    
+
     Usage:
         @router.get("/institutes/{institute_id}/endpoint")
         def endpoint(
@@ -325,8 +322,9 @@ def require_institute_access(institute_id: UUID):
         ):
             ...
     """
+
     def check_access(
-        current_staff: StaffProfile = Depends(get_current_staff)
+        current_staff: StaffProfile = Depends(get_current_staff),
     ) -> StaffProfile:
         if not can_access_institute(institute_id, current_staff):
             raise HTTPException(
@@ -334,14 +332,14 @@ def require_institute_access(institute_id: UUID):
                 detail="Access denied to this institute",
             )
         return current_staff
-    
+
     return check_access
 
 
 def require_campus_access(campus_id: UUID):
     """
     Dependency factory to require access to a specific campus.
-    
+
     Usage:
         @router.get("/campuses/{campus_id}/endpoint")
         def endpoint(
@@ -350,9 +348,10 @@ def require_campus_access(campus_id: UUID):
         ):
             ...
     """
+
     def check_access(
         current_staff: StaffProfile = Depends(get_current_staff),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
     ) -> StaffProfile:
         if not can_access_campus(campus_id, current_staff, db):
             raise HTTPException(
@@ -360,6 +359,5 @@ def require_campus_access(campus_id: UUID):
                 detail="Access denied to this campus",
             )
         return current_staff
-    
-    return check_access
 
+    return check_access

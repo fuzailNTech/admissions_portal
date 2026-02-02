@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from typing import List
+from sqlalchemy import or_
+from typing import List, Optional
 from uuid import UUID
 
 from app.database.config.db import get_db
-from app.database.models.institute import Institute
+from app.database.models.institute import Institute, InstituteStatus
 from app.database.models.auth import User
 from app.schema.super_admin.institute import (
     InstituteCreate,
@@ -13,18 +14,11 @@ from app.schema.super_admin.institute import (
     InstituteResponse,
 )
 from app.utils.auth import require_super_admin
-import re
 
 institute_router = APIRouter(
     prefix="/institutes",
     tags=["Super Admin - Institute Management"],
 )
-
-
-def generate_slug(name: str) -> str:
-    """Generate a URL-friendly slug from a name."""
-    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
-    return slug
 
 
 @institute_router.post(
@@ -37,28 +31,27 @@ def create_institute(
 ):
     """
     Create a new institute.
+    
     Requires super admin role.
+    Creates a new educational institute with all required information.
     """
-    try:
-        # Generate slug if not provided
-        slug = institute.slug
-        if not slug:
-            slug = generate_slug(institute.name)
-
-        # Check if slug already exists
-        existing = db.query(Institute).filter(Institute.slug == slug).first()
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Institute with slug '{slug}' already exists",
-            )
-
-        # Create new institute
-        db_institute = Institute(
-            name=institute.name,
-            slug=slug,
-            active=institute.active,
+    # Check if institute_code already exists
+    existing = db.query(Institute).filter(
+        Institute.institute_code == institute.institute_code
+    ).first()
+    
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Institute with code '{institute.institute_code}' already exists",
         )
+
+    try:
+        # Create new institute
+        institute_data = institute.model_dump()
+        institute_data['created_by'] = current_user.id
+        
+        db_institute = Institute(**institute_data)
 
         db.add(db_institute)
         db.commit()
@@ -66,14 +59,12 @@ def create_institute(
 
         return db_institute
 
-    except IntegrityError as e:
+    except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Institute with this slug already exists",
+            detail="Institute with this code already exists",
         )
-    except HTTPException:
-        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(
@@ -86,19 +77,36 @@ def create_institute(
 def list_institutes(
     skip: int = 0,
     limit: int = 100,
-    active: bool = None,
+    status: Optional[InstituteStatus] = None,
+    institute_type: Optional[str] = None,
+    search: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     """
     List all institutes.
     
-    Super admin can view all institutes with optional filters.
+    Super admin can view all institutes with optional filters:
+    - status: Filter by institute status
+    - institute_type: Filter by type (government/private/semi_government)
+    - search: Search by name or institute_code
     """
     query = db.query(Institute)
 
     # Apply filters
-    if active is not None:
-        query = query.filter(Institute.active == active)
+    if status is not None:
+        query = query.filter(Institute.status == status)
+    
+    if institute_type is not None:
+        query = query.filter(Institute.institute_type == institute_type)
+    
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                Institute.name.ilike(search_term),
+                Institute.institute_code.ilike(search_term)
+            )
+        )
 
     # Order by name
     query = query.order_by(Institute.name)
@@ -137,6 +145,7 @@ def update_institute(
 ):
     """
     Update an institute.
+    
     Requires super admin role.
     Only provided fields will be updated.
     """
@@ -150,18 +159,22 @@ def update_institute(
 
     # Update only provided fields
     update_data = institute_update.model_dump(exclude_unset=True)
-
-    # Handle slug generation if name is updated but slug is not
-    if "name" in update_data and "slug" not in update_data:
-        new_slug = generate_slug(update_data["name"])
-        # Check if new slug conflicts with existing
+    
+    # Check if institute_code is being updated and already exists
+    if "institute_code" in update_data:
         existing = (
             db.query(Institute)
-            .filter(Institute.slug == new_slug, Institute.id != institute_id)
+            .filter(
+                Institute.institute_code == update_data["institute_code"],
+                Institute.id != institute_id
+            )
             .first()
         )
-        if not existing:
-            update_data["slug"] = new_slug
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Institute with code '{update_data['institute_code']}' already exists",
+            )
 
     for field, value in update_data.items():
         setattr(db_institute, field, value)
@@ -171,11 +184,11 @@ def update_institute(
         db.refresh(db_institute)
         return db_institute
 
-    except IntegrityError as e:
+    except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Update would violate unique constraint (slug may already exist)",
+            detail="Update would violate unique constraint (institute_code may already exist)",
         )
     except Exception as e:
         db.rollback()
