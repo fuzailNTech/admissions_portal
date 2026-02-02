@@ -14,7 +14,7 @@ from app.database.models.admission import (
 )
 from app.database.models.auth import StaffProfile
 from app.database.models.institute import Campus
-from app.database.models.admission import AdmissionCycleStatus
+from app.database.models.admission import AdmissionCycleStatus, QuotaStatus
 from app.schema.admin.admission import (
     # AdmissionCycle
     AdmissionCycleCreate,
@@ -30,6 +30,7 @@ from app.schema.admin.admission import (
     ProgramAdmissionCycleUpdate,
     ProgramAdmissionCycleResponse,
     ProgramAdmissionCycleDetailResponse,
+    ProgramAdmissionCycleWithQuotasResponse,
     # ProgramQuota
     ProgramQuotaCreate,
     ProgramQuotaUpdate,
@@ -952,6 +953,82 @@ def list_program_cycles(
     return result
 
 
+@admission_router.get(
+    "/campus-cycle/{campus_cycle_id}/program-cycles/{program_cycle_id}",
+    response_model=ProgramAdmissionCycleWithQuotasResponse
+)
+def get_program_cycle_detail(
+    campus_cycle_id: UUID,
+    program_cycle_id: UUID,
+    staff: StaffProfile = Depends(get_current_staff),
+    db: Session = Depends(get_db),
+):
+    """
+    Get detailed information about a specific program cycle including all quotas.
+    
+    Staff can access if they have access to the campus.
+    Returns complete program cycle details with nested program and quota information.
+    """
+    # Get campus admission cycle
+    campus_cycle = db.query(CampusAdmissionCycle).filter(
+        CampusAdmissionCycle.id == campus_cycle_id
+    ).first()
+    
+    if not campus_cycle:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campus admission cycle not found",
+        )
+    
+    # Check if staff can access the campus
+    if not can_access_campus(campus_cycle.campus_id, staff, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this campus",
+        )
+    
+    # Get program cycle with program details
+    from app.database.models.institute import Program
+    program_cycle = (
+        db.query(ProgramAdmissionCycle)
+        .join(Program, ProgramAdmissionCycle.program_id == Program.id)
+        .filter(
+            ProgramAdmissionCycle.id == program_cycle_id,
+            ProgramAdmissionCycle.campus_admission_cycle_id == campus_cycle_id
+        )
+        .first()
+    )
+    
+    if not program_cycle:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Program cycle not found in this campus cycle",
+        )
+    
+    # Get all quotas for this program cycle
+    quotas = (
+        db.query(ProgramQuota)
+        .filter(ProgramQuota.program_cycle_id == program_cycle_id)
+        .order_by(ProgramQuota.priority_order, ProgramQuota.created_at)
+        .all()
+    )
+    
+    # Build detailed response
+    return ProgramAdmissionCycleWithQuotasResponse(
+        id=program_cycle.id,
+        campus_admission_cycle_id=program_cycle.campus_admission_cycle_id,
+        total_seats=program_cycle.total_seats,
+        seats_filled=program_cycle.seats_filled,
+        description=program_cycle.description,
+        custom_metadata=program_cycle.custom_metadata,
+        is_active=program_cycle.is_active,
+        created_at=program_cycle.created_at,
+        updated_at=program_cycle.updated_at,
+        program=program_cycle.program,  # SQLAlchemy relationship
+        quotas=quotas,  # All quotas for this program cycle
+    )
+
+
 @admission_router.post(
     "/campus-cycle/{campus_cycle_id}/program-cycles",
     response_model=ProgramAdmissionCycleResponse,
@@ -1002,22 +1079,50 @@ def add_program_to_cycle(
             detail="Access denied to this program",
         )
     
-    # Create program cycle
-    program_cycle_data = program_cycle.model_dump()
+    # Extract quotas from request
+    quotas_data = program_cycle.quotas
+    
+    # Create program cycle (exclude quotas from model_dump)
+    program_cycle_data = program_cycle.model_dump(exclude={'quotas'})
     program_cycle_data['campus_admission_cycle_id'] = campus_cycle_id
     
     try:
+        # Create program cycle
         db_program_cycle = ProgramAdmissionCycle(**program_cycle_data)
         db.add(db_program_cycle)
+        db.flush()  # Flush to get the ID without committing
+        
+        # Create all quotas for this program cycle
+        for quota_data in quotas_data:
+            quota_dict = quota_data.model_dump()
+            quota_dict['program_cycle_id'] = db_program_cycle.id
+            quota_dict['seats_filled'] = 0  # Initialize with 0
+            quota_dict['status'] = QuotaStatus.ACTIVE  # Default status
+            
+            db_quota = ProgramQuota(**quota_dict)
+            db.add(db_quota)
+        
         db.commit()
         db.refresh(db_program_cycle)
         return db_program_cycle
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="This program is already added to this campus cycle",
-        )
+        # Check if it's duplicate program or duplicate quota type
+        if "uq_campus_cycle_program" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This program is already added to this campus cycle",
+            )
+        elif "uq_program_cycle_quota_type" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Duplicate quota type detected. Each quota type must be unique.",
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Integrity constraint violation: {str(e)}",
+            )
     except Exception as e:
         db.rollback()
         raise HTTPException(

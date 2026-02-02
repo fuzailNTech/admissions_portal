@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, List, Any
 from datetime import datetime, date
 from uuid import UUID
@@ -110,13 +110,45 @@ class CampusAdmissionCycleDetailResponse(BaseModel):
 
 
 # ProgramAdmissionCycle Schemas
+class QuotaCreateNested(BaseModel):
+    """Nested quota creation schema for use in ProgramAdmissionCycleCreate"""
+    quota_type: QuotaType
+    quota_name: str = Field(..., min_length=1, max_length=255, description="e.g., Open Merit, Hafiz-e-Quran")
+    allocated_seats: int = Field(..., gt=0, description="Number of seats for this quota")
+    eligibility_requirements: Dict[str, Any] = Field(default_factory=dict)
+    required_documents: List[Any] = Field(default_factory=list)
+    minimum_marks: Optional[int] = Field(None, ge=0, le=100)
+    priority_order: int = Field(default=0, description="Order for merit list generation")
+    description: Optional[str] = None
+    custom_metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
 class ProgramAdmissionCycleCreate(BaseModel):
-    """Add program to a campus admission cycle"""
+    """Add program to a campus admission cycle with quotas"""
     program_id: UUID
     total_seats: int = Field(..., gt=0, description="Total seats for this program")
     description: Optional[str] = None
     custom_metadata: Dict[str, Any] = Field(default_factory=dict)
     is_active: bool = True
+    quotas: List[QuotaCreateNested] = Field(..., min_length=1, description="At least one quota is required")
+    
+    @field_validator('quotas')
+    @classmethod
+    def validate_quotas(cls, quotas, info):
+        """Validate that at least one quota is provided and total allocated seats don't exceed total_seats"""
+        if not quotas:
+            raise ValueError("At least one quota is required")
+        
+        # Get total_seats from the data being validated
+        total_seats = info.data.get('total_seats')
+        if total_seats:
+            total_allocated = sum(q.allocated_seats for q in quotas)
+            if total_allocated > total_seats:
+                raise ValueError(
+                    f"Sum of allocated seats ({total_allocated}) cannot exceed total_seats ({total_seats})"
+                )
+        
+        return quotas
 
 
 class ProgramAdmissionCycleUpdate(BaseModel):
@@ -161,6 +193,25 @@ class ProgramAdmissionCycleDetailResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
     program: ProgramResponse  # Nested program details
+
+    class Config:
+        from_attributes = True
+
+
+# Forward reference for ProgramQuotaResponse (defined below)
+class ProgramAdmissionCycleWithQuotasResponse(BaseModel):
+    """Detailed program admission cycle with program details and all quotas"""
+    id: UUID
+    campus_admission_cycle_id: UUID
+    total_seats: int
+    seats_filled: int
+    description: Optional[str]
+    custom_metadata: Dict[str, Any]
+    is_active: bool
+    created_at: datetime
+    updated_at: Optional[datetime]
+    program: ProgramResponse  # Nested program details
+    quotas: List['ProgramQuotaResponse']  # All quotas for this program cycle
 
     class Config:
         from_attributes = True
