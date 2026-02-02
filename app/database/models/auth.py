@@ -37,7 +37,13 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    staff_profile = relationship("StaffProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    staff_profile = relationship(
+        "StaffProfile",
+        foreign_keys="StaffProfile.user_id",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
     assigned_staff = relationship(
         "StaffProfile",
         foreign_keys="StaffProfile.assigned_by",
