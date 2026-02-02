@@ -12,11 +12,11 @@ from app.schema.super_admin.institute import (
     InstituteUpdate,
     InstituteResponse,
 )
-from app.utils.auth import get_current_active_user
+from app.utils.auth import require_super_admin
 import re
 
 institute_router = APIRouter(
-    prefix="/institute",
+    prefix="/institutes",
     tags=["Super Admin - Institute Management"],
 )
 
@@ -32,8 +32,8 @@ def generate_slug(name: str) -> str:
 )
 def create_institute(
     institute: InstituteCreate,
+    current_user: User = Depends(require_super_admin),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """
     Create a new institute.
@@ -82,7 +82,7 @@ def create_institute(
         )
 
 
-@institute_router.get("/list", response_model=List[InstituteResponse])
+@institute_router.get("", response_model=List[InstituteResponse])
 def list_institutes(
     skip: int = 0,
     limit: int = 100,
@@ -91,6 +91,8 @@ def list_institutes(
 ):
     """
     List all institutes.
+    
+    Super admin can view all institutes with optional filters.
     """
     query = db.query(Institute)
 
@@ -130,8 +132,8 @@ def get_institute(
 def update_institute(
     institute_id: UUID,
     institute_update: InstituteUpdate,
+    current_user: User = Depends(require_super_admin),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """
     Update an institute.
@@ -186,8 +188,8 @@ def update_institute(
 @institute_router.delete("/{institute_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_institute(
     institute_id: UUID,
+    current_user: User = Depends(require_super_admin),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """
     Delete an institute.
