@@ -1,8 +1,8 @@
-"""Initialized Scheme
+"""initial_setup
 
-Revision ID: 200b54038395
+Revision ID: 700378817345
 Revises: 
-Create Date: 2026-01-21 16:49:13.544035
+Create Date: 2026-02-02 18:07:36.735034
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '200b54038395'
+revision: str = '700378817345'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -45,6 +45,45 @@ def upgrade() -> None:
     op.create_index(op.f('ix_institutes_institute_type'), 'institutes', ['institute_type'], unique=False)
     op.create_index(op.f('ix_institutes_name'), 'institutes', ['name'], unique=False)
     op.create_index(op.f('ix_institutes_status'), 'institutes', ['status'], unique=False)
+    op.create_table('users',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('email', sa.String(), nullable=False),
+    sa.Column('password_hash', sa.String(), nullable=False),
+    sa.Column('verified', sa.Boolean(), nullable=False),
+    sa.Column('is_super_admin', sa.Boolean(), nullable=False),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('last_login_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('id')
+    )
+    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
+    op.create_index(op.f('ix_users_is_super_admin'), 'users', ['is_super_admin'], unique=False)
+    op.create_table('admission_cycles',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('institute_id', sa.UUID(), nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('academic_year', sa.String(), nullable=False),
+    sa.Column('session', sa.Enum('SPRING', 'FALL', 'ANNUAL', 'SUMMER', name='academicsession'), nullable=False),
+    sa.Column('status', sa.Enum('DRAFT', 'UPCOMING', 'OPEN', 'CLOSED', 'COMPLETED', 'CANCELLED', name='admissioncyclestatus'), nullable=False),
+    sa.Column('application_start_date', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('application_end_date', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('custom_metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.Column('is_published', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('created_by', sa.UUID(), nullable=True),
+    sa.ForeignKeyConstraint(['institute_id'], ['institutes.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('id')
+    )
+    op.create_index(op.f('ix_admission_cycles_academic_year'), 'admission_cycles', ['academic_year'], unique=False)
+    op.create_index(op.f('ix_admission_cycles_institute_id'), 'admission_cycles', ['institute_id'], unique=False)
+    op.create_index(op.f('ix_admission_cycles_status'), 'admission_cycles', ['status'], unique=False)
+    op.create_index('ix_cycle_institute_year', 'admission_cycles', ['institute_id', 'academic_year'], unique=False)
+    op.create_index('ix_cycle_status_published', 'admission_cycles', ['status', 'is_published'], unique=False)
     op.create_table('campuses',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('institute_id', sa.UUID(), nullable=False),
@@ -101,49 +140,9 @@ def upgrade() -> None:
     op.create_index('ix_custom_field_institute_name', 'custom_form_fields', ['institute_id', 'field_name'], unique=False)
     op.create_index(op.f('ix_custom_form_fields_field_name'), 'custom_form_fields', ['field_name'], unique=False)
     op.create_index(op.f('ix_custom_form_fields_institute_id'), 'custom_form_fields', ['institute_id'], unique=False)
-    op.create_table('users',
-    sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('email', sa.String(), nullable=True),
-    sa.Column('password_hash', sa.String(), nullable=False),
-    sa.Column('verified', sa.Boolean(), nullable=True),
-    sa.Column('role', sa.Enum('user', 'super_admin', name='user_role'), nullable=False),
-    sa.Column('institute_id', sa.UUID(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
-    sa.ForeignKeyConstraint(['institute_id'], ['institutes.id'], ondelete='SET NULL'),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('id')
-    )
-    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
-    op.create_index(op.f('ix_users_institute_id'), 'users', ['institute_id'], unique=False)
-    op.create_index(op.f('ix_users_role'), 'users', ['role'], unique=False)
-    op.create_table('admission_calendars',
-    sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('campus_id', sa.UUID(), nullable=False),
-    sa.Column('name', sa.String(), nullable=False),
-    sa.Column('academic_year', sa.String(), nullable=False),
-    sa.Column('session', sa.Enum('SPRING', 'FALL', 'ANNUAL', 'SUMMER', name='academicsession'), nullable=False),
-    sa.Column('status', sa.Enum('DRAFT', 'UPCOMING', 'OPEN', 'CLOSED', 'COMPLETED', 'CANCELLED', name='admissioncyclestatus'), nullable=False),
-    sa.Column('application_start_date', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('application_end_date', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('description', sa.Text(), nullable=True),
-    sa.Column('custom_metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column('is_published', sa.Boolean(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('created_by', sa.UUID(), nullable=True),
-    sa.ForeignKeyConstraint(['campus_id'], ['campuses.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('id')
-    )
-    op.create_index(op.f('ix_admission_calendars_academic_year'), 'admission_calendars', ['academic_year'], unique=False)
-    op.create_index(op.f('ix_admission_calendars_campus_id'), 'admission_calendars', ['campus_id'], unique=False)
-    op.create_index(op.f('ix_admission_calendars_status'), 'admission_calendars', ['status'], unique=False)
-    op.create_index('ix_calendar_campus_year', 'admission_calendars', ['campus_id', 'academic_year'], unique=False)
-    op.create_index('ix_calendar_status_published', 'admission_calendars', ['status', 'is_published'], unique=False)
     op.create_table('programs',
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('campus_id', sa.UUID(), nullable=False),
+    sa.Column('institute_id', sa.UUID(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('code', sa.String(), nullable=False),
     sa.Column('level', sa.String(), nullable=False),
@@ -154,17 +153,43 @@ def upgrade() -> None:
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
-    sa.ForeignKeyConstraint(['campus_id'], ['campuses.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['institute_id'], ['institutes.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('campus_id', 'code', name='uq_campus_program_code'),
-    sa.UniqueConstraint('id')
+    sa.UniqueConstraint('id'),
+    sa.UniqueConstraint('institute_id', 'code', name='uq_institute_program_code')
     )
-    op.create_index('ix_program_campus_code', 'programs', ['campus_id', 'code'], unique=False)
-    op.create_index(op.f('ix_programs_campus_id'), 'programs', ['campus_id'], unique=False)
+    op.create_index('ix_program_institute_code', 'programs', ['institute_id', 'code'], unique=False)
     op.create_index(op.f('ix_programs_category'), 'programs', ['category'], unique=False)
     op.create_index(op.f('ix_programs_code'), 'programs', ['code'], unique=False)
+    op.create_index(op.f('ix_programs_institute_id'), 'programs', ['institute_id'], unique=False)
     op.create_index(op.f('ix_programs_level'), 'programs', ['level'], unique=False)
     op.create_index(op.f('ix_programs_name'), 'programs', ['name'], unique=False)
+    op.create_table('staff_profiles',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('user_id', sa.UUID(), nullable=False),
+    sa.Column('first_name', sa.String(), nullable=False),
+    sa.Column('last_name', sa.String(), nullable=False),
+    sa.Column('phone_number', sa.String(), nullable=True),
+    sa.Column('profile_picture_url', sa.String(), nullable=True),
+    sa.Column('role', sa.Enum('INSTITUTE_ADMIN', 'CAMPUS_ADMIN', name='staffroletype'), nullable=False),
+    sa.Column('institute_id', sa.UUID(), nullable=False),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('assigned_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('assigned_by', sa.UUID(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+    sa.ForeignKeyConstraint(['assigned_by'], ['users.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['institute_id'], ['institutes.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('id')
+    )
+    op.create_index('ix_staff_profile_institute_active', 'staff_profiles', ['institute_id', 'is_active'], unique=False)
+    op.create_index('ix_staff_profile_role_institute', 'staff_profiles', ['role', 'institute_id', 'is_active'], unique=False)
+    op.create_index(op.f('ix_staff_profiles_institute_id'), 'staff_profiles', ['institute_id'], unique=False)
+    op.create_index(op.f('ix_staff_profiles_is_active'), 'staff_profiles', ['is_active'], unique=False)
+    op.create_index(op.f('ix_staff_profiles_role'), 'staff_profiles', ['role'], unique=False)
+    op.create_index(op.f('ix_staff_profiles_user_id'), 'staff_profiles', ['user_id'], unique=True)
     op.create_table('workflow_catalog',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('subflow_key', sa.String(), nullable=False),
@@ -209,28 +234,77 @@ def upgrade() -> None:
     op.create_index('ix_workflow_def_institute_published', 'workflow_definitions', ['institute_id', 'published', 'active'], unique=False)
     op.create_index(op.f('ix_workflow_definitions_institute_id'), 'workflow_definitions', ['institute_id'], unique=False)
     op.create_index(op.f('ix_workflow_definitions_published'), 'workflow_definitions', ['published'], unique=False)
-    op.create_table('admission_calendar_programs',
+    op.create_table('campus_admission_cycles',
     sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('campus_id', sa.UUID(), nullable=False),
     sa.Column('admission_cycle_id', sa.UUID(), nullable=False),
-    sa.Column('program_id', sa.UUID(), nullable=False),
-    sa.Column('total_seats', sa.Integer(), nullable=False),
-    sa.Column('seats_filled', sa.Integer(), nullable=False),
-    sa.Column('minimum_marks_required', sa.Integer(), nullable=True),
-    sa.Column('eligibility_criteria', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('is_open', sa.Boolean(), nullable=False),
+    sa.Column('closure_reason', sa.String(), nullable=True),
     sa.Column('custom_metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('created_by', sa.UUID(), nullable=True),
+    sa.ForeignKeyConstraint(['admission_cycle_id'], ['admission_cycles.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['campus_id'], ['campuses.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('campus_id', 'admission_cycle_id', name='uq_campus_admission_cycle'),
+    sa.UniqueConstraint('id')
+    )
+    op.create_index(op.f('ix_campus_admission_cycles_admission_cycle_id'), 'campus_admission_cycles', ['admission_cycle_id'], unique=False)
+    op.create_index(op.f('ix_campus_admission_cycles_campus_id'), 'campus_admission_cycles', ['campus_id'], unique=False)
+    op.create_index('ix_campus_cycle', 'campus_admission_cycles', ['campus_id', 'admission_cycle_id'], unique=False)
+    op.create_table('campus_programs',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('campus_id', sa.UUID(), nullable=False),
+    sa.Column('program_id', sa.UUID(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
-    sa.ForeignKeyConstraint(['admission_cycle_id'], ['admission_calendars.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['program_id'], ['programs.id'], ondelete='RESTRICT'),
+    sa.Column('created_by', sa.UUID(), nullable=True),
+    sa.ForeignKeyConstraint(['campus_id'], ['campuses.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['program_id'], ['programs.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('admission_cycle_id', 'program_id', name='uq_cycle_program'),
+    sa.UniqueConstraint('campus_id', 'program_id', name='uq_campus_program'),
     sa.UniqueConstraint('id')
     )
-    op.create_index(op.f('ix_admission_calendar_programs_admission_cycle_id'), 'admission_calendar_programs', ['admission_cycle_id'], unique=False)
-    op.create_index(op.f('ix_admission_calendar_programs_program_id'), 'admission_calendar_programs', ['program_id'], unique=False)
-    op.create_index('ix_cycle_program_active', 'admission_calendar_programs', ['admission_cycle_id', 'is_active'], unique=False)
+    op.create_index('ix_campus_program', 'campus_programs', ['campus_id', 'program_id'], unique=False)
+    op.create_index(op.f('ix_campus_programs_campus_id'), 'campus_programs', ['campus_id'], unique=False)
+    op.create_index(op.f('ix_campus_programs_program_id'), 'campus_programs', ['program_id'], unique=False)
+    op.create_table('program_form_fields',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('program_id', sa.UUID(), nullable=False),
+    sa.Column('form_field_id', sa.UUID(), nullable=False),
+    sa.Column('is_required', sa.Boolean(), nullable=False),
+    sa.Column('display_order', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+    sa.ForeignKeyConstraint(['form_field_id'], ['custom_form_fields.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['program_id'], ['programs.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('id'),
+    sa.UniqueConstraint('program_id', 'form_field_id', name='uq_program_form_field')
+    )
+    op.create_index('ix_program_field', 'program_form_fields', ['program_id', 'form_field_id'], unique=False)
+    op.create_index(op.f('ix_program_form_fields_form_field_id'), 'program_form_fields', ['form_field_id'], unique=False)
+    op.create_index(op.f('ix_program_form_fields_program_id'), 'program_form_fields', ['program_id'], unique=False)
+    op.create_table('staff_campuses',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('staff_profile_id', sa.UUID(), nullable=False),
+    sa.Column('campus_id', sa.UUID(), nullable=False),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('assigned_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+    sa.ForeignKeyConstraint(['campus_id'], ['campuses.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['staff_profile_id'], ['staff_profiles.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('id'),
+    sa.UniqueConstraint('staff_profile_id', 'campus_id', name='uq_staff_campus')
+    )
+    op.create_index('ix_campus_staff_active', 'staff_campuses', ['campus_id', 'is_active'], unique=False)
+    op.create_index('ix_staff_campus_active', 'staff_campuses', ['staff_profile_id', 'is_active'], unique=False)
+    op.create_index(op.f('ix_staff_campuses_campus_id'), 'staff_campuses', ['campus_id'], unique=False)
+    op.create_index(op.f('ix_staff_campuses_staff_profile_id'), 'staff_campuses', ['staff_profile_id'], unique=False)
     op.create_table('workflow_instances',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('institute_id', sa.UUID(), nullable=False),
@@ -256,21 +330,26 @@ def upgrade() -> None:
     op.create_index(op.f('ix_workflow_instances_status'), 'workflow_instances', ['status'], unique=False)
     op.create_index(op.f('ix_workflow_instances_updated_at'), 'workflow_instances', ['updated_at'], unique=False)
     op.create_index(op.f('ix_workflow_instances_workflow_definition_id'), 'workflow_instances', ['workflow_definition_id'], unique=False)
-    op.create_table('program_form_fields',
+    op.create_table('program_admission_cycles',
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('program_cycle_id', sa.UUID(), nullable=False),
-    sa.Column('form_field_id', sa.UUID(), nullable=False),
-    sa.Column('is_required', sa.Boolean(), nullable=False),
+    sa.Column('campus_admission_cycle_id', sa.UUID(), nullable=False),
+    sa.Column('program_id', sa.UUID(), nullable=False),
+    sa.Column('total_seats', sa.Integer(), nullable=False),
+    sa.Column('seats_filled', sa.Integer(), nullable=False),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('custom_metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
-    sa.ForeignKeyConstraint(['form_field_id'], ['custom_form_fields.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['program_cycle_id'], ['admission_calendar_programs.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['campus_admission_cycle_id'], ['campus_admission_cycles.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['program_id'], ['programs.id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('id'),
-    sa.UniqueConstraint('program_cycle_id', 'form_field_id', name='uq_program_cycle_form_field')
+    sa.UniqueConstraint('campus_admission_cycle_id', 'program_id', name='uq_campus_cycle_program'),
+    sa.UniqueConstraint('id')
     )
-    op.create_index(op.f('ix_program_form_fields_form_field_id'), 'program_form_fields', ['form_field_id'], unique=False)
-    op.create_index(op.f('ix_program_form_fields_program_cycle_id'), 'program_form_fields', ['program_cycle_id'], unique=False)
+    op.create_index('ix_campus_cycle_program_active', 'program_admission_cycles', ['campus_admission_cycle_id', 'program_id', 'is_active'], unique=False)
+    op.create_index(op.f('ix_program_admission_cycles_campus_admission_cycle_id'), 'program_admission_cycles', ['campus_admission_cycle_id'], unique=False)
+    op.create_index(op.f('ix_program_admission_cycles_program_id'), 'program_admission_cycles', ['program_id'], unique=False)
     op.create_table('program_quotas',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('program_cycle_id', sa.UUID(), nullable=False),
@@ -287,7 +366,7 @@ def upgrade() -> None:
     sa.Column('custom_metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
-    sa.ForeignKeyConstraint(['program_cycle_id'], ['admission_calendar_programs.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['program_cycle_id'], ['program_admission_cycles.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('id'),
     sa.UniqueConstraint('program_cycle_id', 'quota_type', name='uq_program_cycle_quota_type')
@@ -295,33 +374,20 @@ def upgrade() -> None:
     op.create_index(op.f('ix_program_quotas_program_cycle_id'), 'program_quotas', ['program_cycle_id'], unique=False)
     op.create_index(op.f('ix_program_quotas_quota_type'), 'program_quotas', ['quota_type'], unique=False)
     op.create_index('ix_quota_program_cycle_status', 'program_quotas', ['program_cycle_id', 'status'], unique=False)
-    op.create_table('verification_tokens',
-    sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('user_id', sa.UUID(), nullable=False),
-    sa.Column('workflow_instance_id', sa.UUID(), nullable=False),
-    sa.Column('token', sa.String(), nullable=False),
-    sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('consumed_at', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('sent_at', sa.DateTime(timezone=True), nullable=True),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['workflow_instance_id'], ['workflow_instances.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('token')
-    )
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_table('verification_tokens')
     op.drop_index('ix_quota_program_cycle_status', table_name='program_quotas')
     op.drop_index(op.f('ix_program_quotas_quota_type'), table_name='program_quotas')
     op.drop_index(op.f('ix_program_quotas_program_cycle_id'), table_name='program_quotas')
     op.drop_table('program_quotas')
-    op.drop_index(op.f('ix_program_form_fields_program_cycle_id'), table_name='program_form_fields')
-    op.drop_index(op.f('ix_program_form_fields_form_field_id'), table_name='program_form_fields')
-    op.drop_table('program_form_fields')
+    op.drop_index(op.f('ix_program_admission_cycles_program_id'), table_name='program_admission_cycles')
+    op.drop_index(op.f('ix_program_admission_cycles_campus_admission_cycle_id'), table_name='program_admission_cycles')
+    op.drop_index('ix_campus_cycle_program_active', table_name='program_admission_cycles')
+    op.drop_table('program_admission_cycles')
     op.drop_index(op.f('ix_workflow_instances_workflow_definition_id'), table_name='workflow_instances')
     op.drop_index(op.f('ix_workflow_instances_updated_at'), table_name='workflow_instances')
     op.drop_index(op.f('ix_workflow_instances_status'), table_name='workflow_instances')
@@ -330,10 +396,23 @@ def downgrade() -> None:
     op.drop_index('ix_workflow_instance_institute_status', table_name='workflow_instances')
     op.drop_index('ix_workflow_instance_business_key', table_name='workflow_instances')
     op.drop_table('workflow_instances')
-    op.drop_index('ix_cycle_program_active', table_name='admission_calendar_programs')
-    op.drop_index(op.f('ix_admission_calendar_programs_program_id'), table_name='admission_calendar_programs')
-    op.drop_index(op.f('ix_admission_calendar_programs_admission_cycle_id'), table_name='admission_calendar_programs')
-    op.drop_table('admission_calendar_programs')
+    op.drop_index(op.f('ix_staff_campuses_staff_profile_id'), table_name='staff_campuses')
+    op.drop_index(op.f('ix_staff_campuses_campus_id'), table_name='staff_campuses')
+    op.drop_index('ix_staff_campus_active', table_name='staff_campuses')
+    op.drop_index('ix_campus_staff_active', table_name='staff_campuses')
+    op.drop_table('staff_campuses')
+    op.drop_index(op.f('ix_program_form_fields_program_id'), table_name='program_form_fields')
+    op.drop_index(op.f('ix_program_form_fields_form_field_id'), table_name='program_form_fields')
+    op.drop_index('ix_program_field', table_name='program_form_fields')
+    op.drop_table('program_form_fields')
+    op.drop_index(op.f('ix_campus_programs_program_id'), table_name='campus_programs')
+    op.drop_index(op.f('ix_campus_programs_campus_id'), table_name='campus_programs')
+    op.drop_index('ix_campus_program', table_name='campus_programs')
+    op.drop_table('campus_programs')
+    op.drop_index('ix_campus_cycle', table_name='campus_admission_cycles')
+    op.drop_index(op.f('ix_campus_admission_cycles_campus_id'), table_name='campus_admission_cycles')
+    op.drop_index(op.f('ix_campus_admission_cycles_admission_cycle_id'), table_name='campus_admission_cycles')
+    op.drop_table('campus_admission_cycles')
     op.drop_index(op.f('ix_workflow_definitions_published'), table_name='workflow_definitions')
     op.drop_index(op.f('ix_workflow_definitions_institute_id'), table_name='workflow_definitions')
     op.drop_index('ix_workflow_def_institute_published', table_name='workflow_definitions')
@@ -343,23 +422,20 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_workflow_catalog_published'), table_name='workflow_catalog')
     op.drop_index('ix_catalog_key_version', table_name='workflow_catalog')
     op.drop_table('workflow_catalog')
+    op.drop_index(op.f('ix_staff_profiles_user_id'), table_name='staff_profiles')
+    op.drop_index(op.f('ix_staff_profiles_role'), table_name='staff_profiles')
+    op.drop_index(op.f('ix_staff_profiles_is_active'), table_name='staff_profiles')
+    op.drop_index(op.f('ix_staff_profiles_institute_id'), table_name='staff_profiles')
+    op.drop_index('ix_staff_profile_role_institute', table_name='staff_profiles')
+    op.drop_index('ix_staff_profile_institute_active', table_name='staff_profiles')
+    op.drop_table('staff_profiles')
     op.drop_index(op.f('ix_programs_name'), table_name='programs')
     op.drop_index(op.f('ix_programs_level'), table_name='programs')
+    op.drop_index(op.f('ix_programs_institute_id'), table_name='programs')
     op.drop_index(op.f('ix_programs_code'), table_name='programs')
     op.drop_index(op.f('ix_programs_category'), table_name='programs')
-    op.drop_index(op.f('ix_programs_campus_id'), table_name='programs')
-    op.drop_index('ix_program_campus_code', table_name='programs')
+    op.drop_index('ix_program_institute_code', table_name='programs')
     op.drop_table('programs')
-    op.drop_index('ix_calendar_status_published', table_name='admission_calendars')
-    op.drop_index('ix_calendar_campus_year', table_name='admission_calendars')
-    op.drop_index(op.f('ix_admission_calendars_status'), table_name='admission_calendars')
-    op.drop_index(op.f('ix_admission_calendars_campus_id'), table_name='admission_calendars')
-    op.drop_index(op.f('ix_admission_calendars_academic_year'), table_name='admission_calendars')
-    op.drop_table('admission_calendars')
-    op.drop_index(op.f('ix_users_role'), table_name='users')
-    op.drop_index(op.f('ix_users_institute_id'), table_name='users')
-    op.drop_index(op.f('ix_users_email'), table_name='users')
-    op.drop_table('users')
     op.drop_index(op.f('ix_custom_form_fields_institute_id'), table_name='custom_form_fields')
     op.drop_index(op.f('ix_custom_form_fields_field_name'), table_name='custom_form_fields')
     op.drop_index('ix_custom_field_institute_name', table_name='custom_form_fields')
@@ -369,6 +445,15 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_campuses_city'), table_name='campuses')
     op.drop_index(op.f('ix_campuses_campus_type'), table_name='campuses')
     op.drop_table('campuses')
+    op.drop_index('ix_cycle_status_published', table_name='admission_cycles')
+    op.drop_index('ix_cycle_institute_year', table_name='admission_cycles')
+    op.drop_index(op.f('ix_admission_cycles_status'), table_name='admission_cycles')
+    op.drop_index(op.f('ix_admission_cycles_institute_id'), table_name='admission_cycles')
+    op.drop_index(op.f('ix_admission_cycles_academic_year'), table_name='admission_cycles')
+    op.drop_table('admission_cycles')
+    op.drop_index(op.f('ix_users_is_super_admin'), table_name='users')
+    op.drop_index(op.f('ix_users_email'), table_name='users')
+    op.drop_table('users')
     op.drop_index(op.f('ix_institutes_status'), table_name='institutes')
     op.drop_index(op.f('ix_institutes_name'), table_name='institutes')
     op.drop_index(op.f('ix_institutes_institute_type'), table_name='institutes')

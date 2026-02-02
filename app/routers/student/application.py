@@ -22,7 +22,7 @@ from app.bpm.engine import (
 
 application_router = APIRouter(
     prefix="/application",
-    tags=["Student Application Management"],
+    tags=["Student - Application Management"],
 )
 
 

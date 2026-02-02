@@ -19,7 +19,7 @@ from app.bpm.engine import load_spec_from_xml
 
 workflow_catalog_router = APIRouter(
     prefix="/subworkflow",
-    tags=["Super Admin Workflow Catalog Management"],
+    tags=["Super Admin - Workflow Catalog Management"],
 )
 
 

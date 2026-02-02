@@ -29,7 +29,7 @@ from app.utils.admission import get_active_cycle
 
 institute_router = APIRouter(
     prefix="/institutes",
-    tags=["Student Institutes"],
+    tags=["Student - Institutes"],
 )
 
 

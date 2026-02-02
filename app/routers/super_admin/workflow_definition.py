@@ -20,7 +20,7 @@ from app.bpm.compiler.compiler import compile_manifest_to_bpmn
 
 workflow_definition_router = APIRouter(
     prefix="/workflow-definition",
-    tags=["Super Admin Workflow Definition Management"],
+    tags=["Super Admin - Workflow Definition Management"],
 )
 
 
