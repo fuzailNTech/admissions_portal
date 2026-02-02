@@ -363,4 +363,3 @@ def require_campus_access(campus_id: UUID):
     
     return check_access
 
-

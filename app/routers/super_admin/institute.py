@@ -17,7 +17,7 @@ import re
 
 institute_router = APIRouter(
     prefix="/institute",
-    tags=["Super Admin Institute Management"],
+    tags=["Super Admin - Institute Management"],
 )
 
 
