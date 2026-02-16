@@ -14,74 +14,74 @@ from app.database.config.db import Base
 # ==================== ENUMS ====================
 
 class GenderType(str, Enum):
-    MALE = "male"
-    FEMALE = "female"
-    OTHER = "other"
+    MALE = "MALE"
+    FEMALE = "FEMALE"
+    OTHER = "OTHER"
 
 
 class IdentityDocumentType(str, Enum):
-    CNIC = "cnic"  # Computerized National Identity Card (18+)
-    B_FORM = "b_form"  # Birth Certificate / Form-B (under 18)
+    CNIC = "CNIC"  # Computerized National Identity Card (18+)
+    B_FORM = "B_FORM"  # Birth Certificate / Form-B (under 18)
 
 
 class ReligionType(str, Enum):
-    ISLAM = "islam"
-    CHRISTIANITY = "christianity"
-    HINDUISM = "hinduism"
-    SIKHISM = "sikhism"
-    OTHER = "other"
+    ISLAM = "ISLAM"
+    CHRISTIANITY = "CHRISTIANITY"
+    HINDUISM = "HINDUISM"
+    SIKHISM = "SIKHISM"
+    OTHER = "OTHER"
 
 
 class ProvinceType(str, Enum):
-    PUNJAB = "punjab"
-    SINDH = "sindh"
-    KPK = "khyber_pakhtunkhwa"
-    BALOCHISTAN = "balochistan"
-    GILGIT_BALTISTAN = "gilgit_baltistan"
-    AJK = "azad_jammu_kashmir"
-    ICT = "islamabad_capital_territory"
-    FATA = "fata"  # Historically, now merged with KPK
+    PUNJAB = "PUNJAB"
+    SINDH = "SINDH"
+    KPK = "KPK"
+    BALOCHISTAN = "BALOCHISTAN"
+    GILGIT_BALTISTAN = "GILGIT_BALTISTAN"
+    AJK = "AJK"
+    ICT = "ICT"
+    FATA = "FATA"  # Historically, now merged with KPK
 
 
 class GuardianRelationship(str, Enum):
-    FATHER = "father"
-    MOTHER = "mother"
-    BROTHER = "brother"
-    SISTER = "sister"
-    UNCLE = "uncle"
-    AUNT = "aunt"
-    GRANDFATHER = "grandfather"
-    GRANDMOTHER = "grandmother"
-    LEGAL_GUARDIAN = "legal_guardian"
-    OTHER = "other"
+    FATHER = "FATHER"
+    MOTHER = "MOTHER"
+    BROTHER = "BROTHER"
+    SISTER = "SISTER"
+    UNCLE = "UNCLE"
+    AUNT = "AUNT"
+    GRANDFATHER = "GRANDFATHER"
+    GRANDMOTHER = "GRANDMOTHER"
+    LEGAL_GUARDIAN = "LEGAL_GUARDIAN"
+    OTHER = "OTHER"
 
 
 class AcademicLevel(str, Enum):
-    PRIMARY = "primary"
-    MIDDLE = "middle"
-    SECONDARY = "secondary"  # SSC / Matric
-    HIGHER_SECONDARY = "higher_secondary"  # HSSC / Intermediate
+    PRIMARY = "PRIMARY"
+    MIDDLE = "MIDDLE"
+    SECONDARY = "SECONDARY"  # SSC / Matric
+    HIGHER_SECONDARY = "HIGHER_SECONDARY"  # HSSC / Intermediate
 
 
 class EducationGroup(str, Enum):
     # ===== SSC LEVEL (Secondary / Matric) =====
-    SSC_SCIENCE_BIOLOGY = "ssc_science_biology"
-    SSC_SCIENCE_COMPUTER = "ssc_science_computer"
-    SSC_HUMANITIES = "ssc_humanities"
-    SSC_COMMERCE = "ssc_commerce"
-    SSC_TECHNICAL = "ssc_technical"
-    SSC_AGRICULTURE = "ssc_agriculture"
-    SSC_HEALTH_SCIENCE = "ssc_health_science"
+    SSC_SCIENCE_BIOLOGY = "SSC_SCIENCE_BIOLOGY"
+    SSC_SCIENCE_COMPUTER = "SSC_SCIENCE_COMPUTER"
+    SSC_HUMANITIES = "SSC_HUMANITIES"
+    SSC_COMMERCE = "SSC_COMMERCE"
+    SSC_TECHNICAL = "SSC_TECHNICAL"
+    SSC_AGRICULTURE = "SSC_AGRICULTURE"
+    SSC_HEALTH_SCIENCE = "SSC_HEALTH_SCIENCE"
     
     # ===== HSSC LEVEL (Higher Secondary / Intermediate) =====
-    HSSC_FSC_PRE_MEDICAL = "hssc_fsc_pre_medical"
-    HSSC_FSC_PRE_ENGINEERING = "hssc_fsc_pre_engineering"
-    HSSC_FSC_GENERAL_SCIENCE = "hssc_fsc_general_science"
-    HSSC_ICS = "hssc_ics"
-    HSSC_FA = "hssc_fa"
-    HSSC_ICOM = "hssc_icom"
-    HSSC_DCOM = "hssc_dcom"
-    HSSC_TECHNICAL = "hssc_technical"
+    HSSC_FSC_PRE_MEDICAL = "HSSC_FSC_PRE_MEDICAL"
+    HSSC_FSC_PRE_ENGINEERING = "HSSC_FSC_PRE_ENGINEERING"
+    HSSC_FSC_GENERAL_SCIENCE = "HSSC_FSC_GENERAL_SCIENCE"
+    HSSC_ICS = "HSSC_ICS"
+    HSSC_FA = "HSSC_FA"
+    HSSC_ICOM = "HSSC_ICOM"
+    HSSC_DCOM = "HSSC_DCOM"
+    HSSC_TECHNICAL = "HSSC_TECHNICAL"
 
 
 # ==================== MODELS ====================

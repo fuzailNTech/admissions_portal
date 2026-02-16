@@ -11,8 +11,8 @@ from datetime import datetime, timedelta
 class StaffRoleType(str, enum.Enum):
     """Staff role type enumeration."""
     
-    INSTITUTE_ADMIN = "institute_admin"  # Full access to all campuses in institute
-    CAMPUS_ADMIN = "campus_admin"        # Access to specific assigned campuses only
+    INSTITUTE_ADMIN = "INSTITUTE_ADMIN"  # Full access to all campuses in institute
+    CAMPUS_ADMIN = "CAMPUS_ADMIN"        # Access to specific assigned campuses only
 
 
 class User(Base):
