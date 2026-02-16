@@ -15,21 +15,21 @@ from app.database.config.db import Base
 
 class ApplicationStatus(str, Enum):
     """Application status throughout the admission process."""
-    SUBMITTED = "SUBMITTED"
-    UNDER_REVIEW = "UNDER_REVIEW"
-    DOCUMENTS_PENDING = "DOCUMENTS_PENDING"
-    VERIFIED = "VERIFIED"
-    OFFERED = "OFFERED"
-    REJECTED = "REJECTED"
-    ACCEPTED = "ACCEPTED"
-    WITHDRAWN = "WITHDRAWN"
+    SUBMITTED = "submitted"
+    UNDER_REVIEW = "under_review"
+    DOCUMENTS_PENDING = "documents_pending"
+    VERIFIED = "verified"
+    OFFERED = "offered"
+    REJECTED = "rejected"
+    ACCEPTED = "accepted"
+    WITHDRAWN = "withdrawn"
 
 
 class VerificationStatus(str, Enum):
     """Verification status for documents and academic records."""
-    PENDING = "PENDING"
-    APPROVED = "APPROVED"
-    REJECTED = "REJECTED"
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
 
 
 # ==================== MODELS ====================
@@ -102,7 +102,7 @@ class Application(Base):
     status = Column(
         SQLEnum(ApplicationStatus, name="applicationstatus"),
         nullable=False,
-        default="SUBMITTED",
+        default="submitted",
         index=True,
     )
     workflow_instance_id = Column(
@@ -331,7 +331,7 @@ class ApplicationAcademicSnapshot(Base):
     is_verified = Column(Boolean, default=False, nullable=False)
     verification_status = Column(
         SQLEnum(VerificationStatus, name="verificationstatus"),
-        default="PENDING",
+        default="pending",
         nullable=False,
         index=True,
     )
@@ -409,7 +409,7 @@ class ApplicationDocument(Base):
     # ==================== VERIFICATION ====================
     verification_status = Column(
         SQLEnum(VerificationStatus, name="verificationstatus"),
-        default="PENDING",
+        default="pending",
         nullable=False,
         index=True,
     )

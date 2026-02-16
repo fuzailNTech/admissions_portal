@@ -96,7 +96,7 @@ class ProgramCreate(BaseModel):
     category: Optional[str] = Field(None, description="Science, Arts, Commerce")
     duration_years: Optional[int] = Field(None, ge=1, le=10)
     fee: Optional[float] = Field(None, ge=0, description="Program fee amount")
-    shift: ShiftType = Field(default=ShiftType.MORNING, description="morning, afternoon, evening")
+    shift: ShiftType = Field(default=ShiftType.MORNING, description="MORNING, AFTERNOON, EVENING")
     description: Optional[str] = None
     custom_metadata: Dict[str, Any] = Field(default_factory=dict)
     is_active: bool = True
@@ -109,7 +109,7 @@ class ProgramUpdate(BaseModel):
     category: Optional[str] = None
     duration_years: Optional[int] = Field(None, ge=1, le=10)
     fee: Optional[float] = Field(None, ge=0)
-    shift: Optional[ShiftType] = Field(None, description="morning, afternoon, evening")
+    shift: Optional[ShiftType] = Field(None, description="MORNING, AFTERNOON, EVENING")
     description: Optional[str] = None
     custom_metadata: Optional[Dict[str, Any]] = None
     is_active: Optional[bool] = None
