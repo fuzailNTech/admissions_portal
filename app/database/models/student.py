@@ -157,15 +157,9 @@ class StudentProfile(Base):
     # ==================== METADATA ====================
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    created_by = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True
-    )
     
     # ==================== RELATIONSHIPS ====================
     user = relationship("User", foreign_keys=[user_id], back_populates="student_profile")
-    creator = relationship("User", foreign_keys=[created_by])
     guardians = relationship(
         "StudentGuardian",
         back_populates="student_profile",
@@ -206,7 +200,7 @@ class StudentGuardian(Base):
     )
     
     # ==================== GUARDIAN INFORMATION ====================
-    relationship = Column(
+    guardian_relationship = Column(
         SQLEnum(GuardianRelationship, name="guardianrelationship"),
         nullable=False
     )

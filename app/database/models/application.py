@@ -261,7 +261,7 @@ class ApplicationGuardianSnapshot(Base):
     )
     
     # ==================== COPY OF GUARDIAN DATA ====================
-    relationship = Column(String(50), nullable=False)
+    guardian_relationship = Column(String(50), nullable=False)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
     
