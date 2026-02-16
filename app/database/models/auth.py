@@ -81,7 +81,7 @@ class StaffProfile(Base):
     phone_number = Column(String, nullable=True)
     profile_picture_url = Column(String, nullable=True)
     role = Column(
-        SQLEnum(StaffRoleType),
+        SQLEnum(StaffRoleType, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         index=True,
     )

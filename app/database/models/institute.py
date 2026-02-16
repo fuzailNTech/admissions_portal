@@ -60,9 +60,9 @@ class Institute(Base):
     institute_code = Column(String, unique=True, nullable=False, index=True)  # For CMS linking
     
     # Classification
-    institute_type = Column(SQLEnum(InstituteType), nullable=False, index=True)
-    institute_level = Column(SQLEnum(InstituteLevel), nullable=False)
-    status = Column(SQLEnum(InstituteStatus), default=InstituteStatus.ACTIVE, nullable=False, index=True)
+    institute_type = Column(SQLEnum(InstituteType, values_callable=lambda x: [e.value for e in x]), nullable=False, index=True)
+    institute_level = Column(SQLEnum(InstituteLevel, values_callable=lambda x: [e.value for e in x]), nullable=False)
+    status = Column(SQLEnum(InstituteStatus, values_callable=lambda x: [e.value for e in x]), default=InstituteStatus.ACTIVE, nullable=False, index=True)
     
     # Official Information
     registration_number = Column(String, nullable=True)  # HEC/Government registration
@@ -116,7 +116,7 @@ class Campus(Base):
     # Campus Info
     name = Column(String, nullable=False)  # e.g., "Main Campus", "Girls Campus", "North Campus"
     campus_code = Column(String, nullable=True)  # Optional code for the campus
-    campus_type = Column(SQLEnum(CampusType), nullable=False, index=True)
+    campus_type = Column(SQLEnum(CampusType, values_callable=lambda x: [e.value for e in x]), nullable=False, index=True)
     # Location
     country = Column(String, default="Pakistan", nullable=False)
     province_state = Column(String, nullable=True, index=True)
@@ -179,7 +179,7 @@ class Program(Base):
 
     # Fee and Shift
     fee = Column(Numeric(10, 2), nullable=True)  # Program fee amount
-    shift = Column(SQLEnum(ShiftType, name="shifttype"), nullable=False, server_default="morning", index=True)  # Morning, Afternoon, Evening
+    shift = Column(SQLEnum(ShiftType, name="shifttype", values_callable=lambda x: [e.value for e in x]), nullable=False, server_default="morning", index=True)  # Morning, Afternoon, Evening
 
     # Description
     description = Column(String, nullable=True)

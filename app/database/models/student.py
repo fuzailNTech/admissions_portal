@@ -111,18 +111,18 @@ class StudentProfile(Base):
     last_name = Column(String(100), nullable=False)
     father_name = Column(String(100), nullable=False)  # Pakistani standard
     
-    gender = Column(SQLEnum(GenderType, name="gendertype"), nullable=False)
+    gender = Column(SQLEnum(GenderType, name="gendertype", values_callable=lambda x: [e.value for e in x]), nullable=False)
     date_of_birth = Column(Date, nullable=False)
     
     # Identity (Pakistani system)
     identity_doc_number = Column(String(15), unique=True, nullable=False, index=True)
     # Format: XXXXX-XXXXXXX-X (13 digits with dashes)
     identity_doc_type = Column(
-        SQLEnum(IdentityDocumentType, name="identitydocumenttype"),
+        SQLEnum(IdentityDocumentType, name="identitydocumenttype", values_callable=lambda x: [e.value for e in x]),
         nullable=False
     )
     
-    religion = Column(SQLEnum(ReligionType, name="religiontype"), nullable=True)
+    religion = Column(SQLEnum(ReligionType, name="religiontype", values_callable=lambda x: [e.value for e in x]), nullable=True)
     nationality = Column(String(50), default="Pakistani", nullable=False)
     
     # Disability information
@@ -138,12 +138,12 @@ class StudentProfile(Base):
     street_address = Column(Text, nullable=False)
     city = Column(String(100), nullable=False, index=True)
     district = Column(String(100), nullable=False)
-    province = Column(SQLEnum(ProvinceType, name="provincetype"), nullable=False, index=True)
+    province = Column(SQLEnum(ProvinceType, name="provincetype", values_callable=lambda x: [e.value for e in x]), nullable=False, index=True)
     postal_code = Column(String(10), nullable=True)
     
     # Domicile (for quota allocation - critical in Pakistan)
     domicile_province = Column(
-        SQLEnum(ProvinceType, name="provincetype"),
+        SQLEnum(ProvinceType, name="provincetype", values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         index=True
     )
@@ -201,7 +201,7 @@ class StudentGuardian(Base):
     
     # ==================== GUARDIAN INFORMATION ====================
     guardian_relationship = Column(
-        SQLEnum(GuardianRelationship, name="guardianrelationship"),
+        SQLEnum(GuardianRelationship, name="guardianrelationship", values_callable=lambda x: [e.value for e in x]),
         nullable=False
     )
     first_name = Column(String(100), nullable=False)
@@ -253,12 +253,12 @@ class StudentAcademicRecord(Base):
     )
     
     # ==================== ACADEMIC DETAILS ====================
-    level = Column(SQLEnum(AcademicLevel, name="academiclevel"), nullable=False)
+    level = Column(SQLEnum(AcademicLevel, name="academiclevel", values_callable=lambda x: [e.value for e in x]), nullable=False)
     # PRIMARY, MIDDLE, SECONDARY, HIGHER_SECONDARY
     
     # Education Group (Pakistani system)
     education_group = Column(
-        SQLEnum(EducationGroup, name="educationgroup"),
+        SQLEnum(EducationGroup, name="educationgroup", values_callable=lambda x: [e.value for e in x]),
         nullable=True
     )
     # Required for SECONDARY and HIGHER_SECONDARY

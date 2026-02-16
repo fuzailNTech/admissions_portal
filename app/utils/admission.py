@@ -5,7 +5,7 @@ from typing import Optional
 from uuid import UUID
 from sqlalchemy.orm import Session
 
-from app.database.models.admission import AdmissionCycle
+from app.database.models.admission import AdmissionCycle, AdmissionCycleStatus
 
 
 def get_active_cycle(db: Session, institute_id: UUID) -> Optional[AdmissionCycle]:
@@ -24,7 +24,7 @@ def get_active_cycle(db: Session, institute_id: UUID) -> Optional[AdmissionCycle
         .filter(
             AdmissionCycle.institute_id == institute_id,
             AdmissionCycle.is_published == True,
-            AdmissionCycle.status.in_(["OPEN", "UPCOMING"])
+            AdmissionCycle.status.in_([AdmissionCycleStatus.OPEN, AdmissionCycleStatus.UPCOMING])
         )
         .order_by(AdmissionCycle.application_start_date.desc())
         .first()
