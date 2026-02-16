@@ -112,15 +112,15 @@ def add_end(proc: etree._Element, node_id: str) -> etree._Element:
 
 def add_call(proc: etree._Element, node: Dict[str, Any]) -> etree._Element:
     """Create a callActivity for a subprocess.
-    
+
     Note: We use global workflow data instead of explicit input/output mappings.
     The input_mapping and output_mapping in the manifest are kept for documentation
     purposes but are not used to generate BPMN elements.
     """
-    
+
     # Generate node ID: ca_{id} where id is from manifest (sanitized)
-    node_id = f"ca_{node['id']}" if not node['id'].startswith('ca_') else node['id']
-    
+    node_id = f"ca_{node['id']}" if not node["id"].startswith("ca_") else node["id"]
+
     call = etree.SubElement(
         proc,
         b("callActivity"),
@@ -210,7 +210,7 @@ def compile_manifest_to_bpmn(
                 }
             )
             # Use the BPMN node ID (which is ca_{id}) for mapping
-            node_id = f"ca_{n['id']}" if not n['id'].startswith('ca_') else n['id']
+            node_id = f"ca_{n['id']}" if not n["id"].startswith("ca_") else n["id"]
             nodes_xml[n["id"]] = el
 
         elif n["type"] == "gateway":
@@ -266,5 +266,3 @@ def compile_manifest_to_bpmn(
                 flow_idx += 1
 
     return tostring(tree), refs
-
-

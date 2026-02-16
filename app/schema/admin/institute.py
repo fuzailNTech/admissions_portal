@@ -95,6 +95,8 @@ class ProgramCreate(BaseModel):
     level: str = Field(..., description="Intermediate, Bachelors, Masters, PhD")
     category: Optional[str] = Field(None, description="Science, Arts, Commerce")
     duration_years: Optional[int] = Field(None, ge=1, le=10)
+    fee: Optional[float] = Field(None, ge=0, description="Program fee amount")
+    shift: str = Field(default="morning", description="morning, afternoon, evening")
     description: Optional[str] = None
     custom_metadata: Dict[str, Any] = Field(default_factory=dict)
     is_active: bool = True
@@ -106,6 +108,8 @@ class ProgramUpdate(BaseModel):
     level: Optional[str] = None
     category: Optional[str] = None
     duration_years: Optional[int] = Field(None, ge=1, le=10)
+    fee: Optional[float] = Field(None, ge=0)
+    shift: Optional[str] = Field(None, description="morning, afternoon, evening")
     description: Optional[str] = None
     custom_metadata: Optional[Dict[str, Any]] = None
     is_active: Optional[bool] = None
@@ -119,6 +123,8 @@ class ProgramResponse(BaseModel):
     level: str
     category: Optional[str]
     duration_years: Optional[int]
+    fee: Optional[float]
+    shift: str
     description: Optional[str]
     is_active: bool
     created_at: datetime
@@ -159,6 +165,8 @@ class ProgramInCampusResponse(BaseModel):
     level: str
     category: Optional[str]
     duration_years: Optional[int]
+    fee: Optional[float]
+    shift: str
     description: Optional[str]
     is_active: bool  # From Program table
     campus_program_id: UUID  # From CampusProgram junction table

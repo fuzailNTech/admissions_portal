@@ -402,6 +402,8 @@ def list_campus_programs(
                 level=program.level,
                 category=program.category,
                 duration_years=program.duration_years,
+                fee=float(program.fee) if program.fee else None,
+                shift=program.shift,
                 description=program.description,
                 is_active=program.is_active,
                 campus_program_id=cp.id,

@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, DateTime, Integer, Enum as SQLEnum, ForeignKey, UniqueConstraint, Index
+from sqlalchemy import Column, String, Boolean, DateTime, Integer, Numeric, Enum as SQLEnum, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -35,6 +35,13 @@ class CampusType(str, enum.Enum):
     BOYS = "boys"
     GIRLS = "girls"
     CO_ED = "co_ed"  # Co-educational (both)
+
+
+class ShiftType(str, enum.Enum):
+    """Program shift timings"""
+    MORNING = "morning"
+    AFTERNOON = "afternoon"
+    EVENING = "evening"
 
 
 class Institute(Base):
@@ -169,6 +176,10 @@ class Program(Base):
     level = Column(String, nullable=False, index=True)  # "Intermediate", "Bachelors", "Masters", "PhD"
     category = Column(String, nullable=True, index=True)  # "Science", "Arts", "Commerce"
     duration_years = Column(Integer, nullable=True)  # Program duration in years
+
+    # Fee and Shift
+    fee = Column(Numeric(10, 2), nullable=True)  # Program fee amount
+    shift = Column(SQLEnum(ShiftType, name="shifttype"), nullable=False, server_default="morning", index=True)  # Morning, Afternoon, Evening
 
     # Description
     description = Column(String, nullable=True)
