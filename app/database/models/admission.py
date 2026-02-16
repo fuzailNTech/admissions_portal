@@ -83,8 +83,8 @@ class AdmissionCycle(Base):
     # Cycle Information
     name = Column(String, nullable=False)  # e.g., "Admissions 2026", "Intermediate 2026-27"
     academic_year = Column(String, nullable=False, index=True)  # e.g., "2026-27", "2026"
-    session = Column(SQLEnum(AcademicSession), default=AcademicSession.ANNUAL, nullable=False)
-    status = Column(SQLEnum(AdmissionCycleStatus), default=AdmissionCycleStatus.DRAFT, nullable=False, index=True)
+    session = Column(SQLEnum(AcademicSession, values_callable=lambda x: [e.value for e in x]), default=AcademicSession.ANNUAL, nullable=False)
+    status = Column(SQLEnum(AdmissionCycleStatus, values_callable=lambda x: [e.value for e in x]), default=AdmissionCycleStatus.DRAFT, nullable=False, index=True)
     
     # Institute-wide dates (apply to all campuses by default)
     application_start_date = Column(DateTime(timezone=True), nullable=False)
@@ -269,7 +269,7 @@ class ProgramQuota(Base):
         index=True
     )
 
-    quota_type = Column(SQLEnum(QuotaType), nullable=False, index=True)
+    quota_type = Column(SQLEnum(QuotaType, values_callable=lambda x: [e.value for e in x]), nullable=False, index=True)
     quota_name = Column(String, nullable=False)  # Display name: "Open Merit", "Hafiz-e-Quran"
     # Seat Allocation
     allocated_seats = Column(Integer, nullable=False)  # Number of seats for this quota
@@ -280,7 +280,7 @@ class ProgramQuota(Base):
     minimum_marks = Column(Integer, nullable=True)  # Different minimum for different quotas
     # Priority & Status
     priority_order = Column(Integer, default=0, nullable=False)  # For merit list generation order
-    status = Column(SQLEnum(QuotaStatus), default=QuotaStatus.ACTIVE, nullable=False)
+    status = Column(SQLEnum(QuotaStatus, values_callable=lambda x: [e.value for e in x]), default=QuotaStatus.ACTIVE, nullable=False)
     # Additional Settings
     description = Column(Text, nullable=True)
     custom_metadata = Column(JSONB, default=dict, nullable=False)  # Flexible for custom rules
@@ -345,7 +345,7 @@ class CustomFormField(Base):
     # Field Configuration
     field_name = Column(String, nullable=False, index=True)  # Internal identifier (e.g., "why_premed")
     label = Column(String, nullable=False)  # Display label (e.g., "Why do you want to study Pre-Medical?")
-    field_type = Column(SQLEnum(FieldType), nullable=False)
+    field_type = Column(SQLEnum(FieldType, values_callable=lambda x: [e.value for e in x]), nullable=False)
 
     # Field Properties
     placeholder = Column(String, nullable=True)  # Placeholder text

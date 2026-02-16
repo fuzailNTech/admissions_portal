@@ -100,7 +100,7 @@ class Application(Base):
     
     # ==================== STATUS & WORKFLOW ====================
     status = Column(
-        SQLEnum(ApplicationStatus, name="applicationstatus"),
+        SQLEnum(ApplicationStatus, name="applicationstatus", values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default="submitted",
         index=True,
@@ -330,7 +330,7 @@ class ApplicationAcademicSnapshot(Base):
     # ==================== VERIFICATION (PER APPLICATION) ====================
     is_verified = Column(Boolean, default=False, nullable=False)
     verification_status = Column(
-        SQLEnum(VerificationStatus, name="verificationstatus"),
+        SQLEnum(VerificationStatus, name="verificationstatus", values_callable=lambda x: [e.value for e in x]),
         default="pending",
         nullable=False,
         index=True,
@@ -408,7 +408,7 @@ class ApplicationDocument(Base):
     
     # ==================== VERIFICATION ====================
     verification_status = Column(
-        SQLEnum(VerificationStatus, name="verificationstatus"),
+        SQLEnum(VerificationStatus, name="verificationstatus", values_callable=lambda x: [e.value for e in x]),
         default="pending",
         nullable=False,
         index=True,
@@ -551,11 +551,11 @@ class ApplicationStatusHistory(Base):
     
     # ==================== STATUS CHANGE ====================
     from_status = Column(
-        SQLEnum(ApplicationStatus, name="applicationstatus"),
+        SQLEnum(ApplicationStatus, name="applicationstatus", values_callable=lambda x: [e.value for e in x]),
         nullable=True,  # Null for first entry
     )
     to_status = Column(
-        SQLEnum(ApplicationStatus, name="applicationstatus"),
+        SQLEnum(ApplicationStatus, name="applicationstatus", values_callable=lambda x: [e.value for e in x]),
         nullable=False,
     )
     notes = Column(Text, nullable=True)

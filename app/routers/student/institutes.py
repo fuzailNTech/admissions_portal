@@ -63,7 +63,13 @@ def list_institutes(
     Students can browse available institutes and filter by location/type.
     """
     # Base query - only active institutes
+    print("########################################################")
+    print(InstituteStatus.ACTIVE.value)
+    print("########################################################")
     query = db.query(Institute).filter(Institute.status == InstituteStatus.ACTIVE)
+    print("########################################################")
+    print(query)
+    print("########################################################")
 
     # Search by name (partial match, case-insensitive)
     if search:
@@ -94,10 +100,14 @@ def list_institutes(
 
     # Get total count after all filters
     total = query.count()
-
+    print("########################################################")
+    print( "total", total)
+    print("########################################################")
     # Get institutes with pagination
     institutes = query.order_by(Institute.name).offset(skip).limit(limit).all()
-
+    print("########################################################")
+    print( "institutes", institutes)
+    print("########################################################")
     # Build response
     institutes_data = []
     for institute in institutes:
@@ -178,7 +188,7 @@ def get_institute_details(
     # Get institute
     institute = (
         db.query(Institute)
-        .filter(Institute.id == institute_id, Institute.status == InstituteStatus.ACTIVE)
+        .filter(Institute.id == institute_id, Institute.status == InstituteStatus.ACTIVE.value)
         .first()
     )
 
