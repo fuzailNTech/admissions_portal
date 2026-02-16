@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_96f6665" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.0.0-dev">
+  <bpmn:process id="operation.admission_decision_v1" name="Admission Decision" isExecutable="true">
+    <bpmn:startEvent id="admission_decision_v1.start_event" name="Start Event">
+      <bpmn:outgoing>Flow_1nrozka</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1nrozka" sourceRef="admission_decision_v1.start_event" targetRef="admission_decision_v1.prepare_context" />
+    <bpmn:serviceTask id="admission_decision_v1.prepare_context" name="Prepare Context">
+      <bpmn:incoming>Flow_1nrozka</bpmn:incoming>
+      <bpmn:outgoing>Flow_16i997a</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_16i997a" sourceRef="admission_decision_v1.prepare_context" targetRef="admission_decision_v1.decide_admission_status" />
+    <bpmn:userTask id="admission_decision_v1.decide_admission_status" name="Decide Admission Status">
+      <bpmn:incoming>Flow_16i997a</bpmn:incoming>
+      <bpmn:incoming>Flow_0wic1xw</bpmn:incoming>
+      <bpmn:outgoing>Flow_06yqaib</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="admission_decision_v1.decision_route" name="Decision Route" default="Flow_18u0nz8">
+      <bpmn:incoming>Flow_06yqaib</bpmn:incoming>
+      <bpmn:outgoing>Flow_1wklh8f</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1vd0502</bpmn:outgoing>
+      <bpmn:outgoing>Flow_18u0nz8</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_06yqaib" sourceRef="admission_decision_v1.decide_admission_status" targetRef="admission_decision_v1.decision_route" />
+    <bpmn:sequenceFlow id="Flow_1wklh8f" sourceRef="admission_decision_v1.decision_route" targetRef="admission_decision_v1.offered">
+      <bpmn:conditionExpression>decision=="offered"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1vd0502" sourceRef="admission_decision_v1.decision_route" targetRef="admission_decision_v1.rejected">
+      <bpmn:conditionExpression>decision=="rejected"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_18u0nz8" sourceRef="admission_decision_v1.decision_route" targetRef="admission_decision_v1.on_hold">
+      <bpmn:conditionExpression>decision=="on_hold"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="admission_decision_v1.offered" name="Offered">
+      <bpmn:incoming>Flow_1wklh8f</bpmn:incoming>
+      <bpmn:outgoing>Flow_0hf8b8m</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="admission_decision_v1.rejected" name="Rejected">
+      <bpmn:incoming>Flow_1vd0502</bpmn:incoming>
+      <bpmn:outgoing>Flow_1hska15</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="admission_decision_v1.on_hold" name="On Hold">
+      <bpmn:incoming>Flow_18u0nz8</bpmn:incoming>
+      <bpmn:outgoing>Flow_1gyqh8d</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="admission_decision_v1.end_event">
+      <bpmn:incoming>Flow_0hf8b8m</bpmn:incoming>
+      <bpmn:incoming>Flow_1hska15</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0hf8b8m" sourceRef="admission_decision_v1.offered" targetRef="admission_decision_v1.end_event" />
+    <bpmn:sequenceFlow id="Flow_1hska15" sourceRef="admission_decision_v1.rejected" targetRef="admission_decision_v1.end_event" />
+    <bpmn:sequenceFlow id="Flow_1gyqh8d" sourceRef="admission_decision_v1.on_hold" targetRef="admission_decision_v1.resume_review" />
+    <bpmn:userTask id="admission_decision_v1.resume_review" name="Resume Admission Review">
+      <bpmn:incoming>Flow_1gyqh8d</bpmn:incoming>
+      <bpmn:outgoing>Flow_0wic1xw</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_0wic1xw" sourceRef="admission_decision_v1.resume_review" targetRef="admission_decision_v1.decide_admission_status" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="operation.admission_decision_v1">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="admission_decision_v1.start_event">
+        <dc:Bounds x="179" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="169" y="202" width="57" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_07ik7st_di" bpmnElement="admission_decision_v1.prepare_context">
+        <dc:Bounds x="270" y="137" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_01eryng_di" bpmnElement="admission_decision_v1.decide_admission_status">
+        <dc:Bounds x="430" y="137" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1wipdn9_di" bpmnElement="admission_decision_v1.decision_route" isMarkerVisible="true">
+        <dc:Bounds x="595" y="152" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="581" y="128" width="77" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1ctagvb_di" bpmnElement="admission_decision_v1.offered">
+        <dc:Bounds x="710" y="137" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_078gvb7_di" bpmnElement="admission_decision_v1.rejected">
+        <dc:Bounds x="710" y="250" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_08ojgbf_di" bpmnElement="admission_decision_v1.on_hold">
+        <dc:Bounds x="710" y="360" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0bg4pt5_di" bpmnElement="admission_decision_v1.end_event">
+        <dc:Bounds x="952" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_06ctjw3_di" bpmnElement="admission_decision_v1.resume_review">
+        <dc:Bounds x="710" y="500" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1nrozka_di" bpmnElement="Flow_1nrozka">
+        <di:waypoint x="215" y="177" />
+        <di:waypoint x="270" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16i997a_di" bpmnElement="Flow_16i997a">
+        <di:waypoint x="370" y="177" />
+        <di:waypoint x="430" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_06yqaib_di" bpmnElement="Flow_06yqaib">
+        <di:waypoint x="530" y="177" />
+        <di:waypoint x="595" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1wklh8f_di" bpmnElement="Flow_1wklh8f">
+        <di:waypoint x="645" y="177" />
+        <di:waypoint x="710" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1vd0502_di" bpmnElement="Flow_1vd0502">
+        <di:waypoint x="620" y="202" />
+        <di:waypoint x="620" y="290" />
+        <di:waypoint x="710" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_18u0nz8_di" bpmnElement="Flow_18u0nz8">
+        <di:waypoint x="620" y="202" />
+        <di:waypoint x="620" y="400" />
+        <di:waypoint x="710" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0hf8b8m_di" bpmnElement="Flow_0hf8b8m">
+        <di:waypoint x="810" y="177" />
+        <di:waypoint x="881" y="177" />
+        <di:waypoint x="881" y="220" />
+        <di:waypoint x="952" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hska15_di" bpmnElement="Flow_1hska15">
+        <di:waypoint x="810" y="290" />
+        <di:waypoint x="881" y="290" />
+        <di:waypoint x="881" y="220" />
+        <di:waypoint x="952" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1gyqh8d_di" bpmnElement="Flow_1gyqh8d">
+        <di:waypoint x="760" y="440" />
+        <di:waypoint x="760" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0wic1xw_di" bpmnElement="Flow_0wic1xw">
+        <di:waypoint x="710" y="540" />
+        <di:waypoint x="480" y="540" />
+        <di:waypoint x="480" y="217" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

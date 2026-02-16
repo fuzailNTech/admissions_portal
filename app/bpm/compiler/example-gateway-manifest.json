@@ -1,0 +1,15 @@
+    {
+      "id": "GW_IfVerified",
+      "type": "gateway",
+      "gateway_kind": "exclusive",
+      "branches": [
+        { 
+          "when": "${verification.status == 'verified'}", 
+          "to": "CA_Interview" 
+        },
+        { 
+          "else": true, 
+          "to": "GW_ReverificationLimit" 
+        }
+      ]
+    }

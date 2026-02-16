@@ -376,6 +376,8 @@ def get_institute_details(
                 level=program.level,
                 category=program.category,
                 duration_years=program.duration_years,
+                fee=float(program.fee) if program.fee else None,
+                shift=program.shift,
                 description=program.description,
                 custom_form_fields=form_fields_data,
                 campus_offerings=campus_offerings_data,

@@ -136,6 +136,8 @@ class ProgramWithOfferings(BaseModel):
     level: str
     category: Optional[str]
     duration_years: Optional[int]
+    fee: Optional[float]
+    shift: str
     description: Optional[str]
     
     # Form Fields (program-level)

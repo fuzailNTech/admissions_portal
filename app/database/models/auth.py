@@ -49,6 +49,13 @@ class User(Base):
         foreign_keys="StaffProfile.assigned_by",
         back_populates="assigner",
     )
+    student_profile = relationship(
+        "StudentProfile",
+        foreign_keys="StudentProfile.user_id",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
 
 
 class StaffProfile(Base):
