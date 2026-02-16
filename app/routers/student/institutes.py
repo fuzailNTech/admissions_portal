@@ -63,13 +63,7 @@ def list_institutes(
     Students can browse available institutes and filter by location/type.
     """
     # Base query - only active institutes
-    print("########################################################")
-    print(InstituteStatus.ACTIVE.value)
-    print("########################################################")
     query = db.query(Institute).filter(Institute.status == InstituteStatus.ACTIVE)
-    print("########################################################")
-    print(query)
-    print("########################################################")
 
     # Search by name (partial match, case-insensitive)
     if search:

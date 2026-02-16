@@ -35,6 +35,7 @@ from app.database.models.application import (
     ApplicationComment,
     StudentComment,
     ApplicationStatusHistory,
+    ApplicationNumberSequence
 )
 
 __all__ = [
@@ -73,4 +74,5 @@ __all__ = [
     "ApplicationComment",
     "StudentComment",
     "ApplicationStatusHistory",
+    "ApplicationNumberSequence",
 ]
