@@ -3,6 +3,10 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from uuid import UUID
 
+# Import enums from models
+from app.database.models.institute import InstituteType, InstituteLevel, CampusType, ShiftType
+from app.database.models.admission import AdmissionCycleStatus, AcademicSession, QuotaType, QuotaStatus, FieldType
+
 
 # ==================== ACTIVE CYCLE INFO ====================
 
@@ -11,7 +15,7 @@ class ActiveCycleInfo(BaseModel):
     id: UUID
     name: str
     academic_year: str
-    status: str
+    status: AdmissionCycleStatus
     application_start_date: datetime
     application_end_date: datetime
     is_published: bool
@@ -26,7 +30,7 @@ class CampusBasicInfo(BaseModel):
     """Basic campus information for listing"""
     id: UUID
     name: str
-    campus_type: str
+    campus_type: CampusType
     city: Optional[str]
     is_active: bool
     
@@ -39,8 +43,8 @@ class InstituteBasicInfo(BaseModel):
     id: UUID
     name: str
     institute_code: str
-    institute_type: str
-    institute_level: str
+    institute_type: InstituteType
+    institute_level: InstituteLevel
     established_year: Optional[int]
     
     active_cycle: Optional[ActiveCycleInfo]
@@ -61,14 +65,14 @@ class InstituteListResponse(BaseModel):
 class QuotaDetail(BaseModel):
     """Quota details for students"""
     id: UUID
-    quota_type: str
+    quota_type: QuotaType
     quota_name: str
     allocated_seats: int
     seats_filled: int
     seats_available: int
     minimum_marks: Optional[int]
     priority_order: int
-    status: str
+    status: QuotaStatus
     description: Optional[str]
     eligibility_requirements: Dict[str, Any]
     required_documents: List[Any]
@@ -82,7 +86,7 @@ class CampusOfferingDetail(BaseModel):
     # Campus Info
     campus_id: UUID
     campus_name: str
-    campus_type: str
+    campus_type: CampusType
     campus_code: Optional[str]
     city: Optional[str]
     address_line: Optional[str]
@@ -110,7 +114,7 @@ class CustomFormFieldDetail(BaseModel):
     id: UUID
     field_name: str
     label: str
-    field_type: str
+    field_type: FieldType
     placeholder: Optional[str]
     help_text: Optional[str]
     default_value: Optional[str]
@@ -137,7 +141,7 @@ class ProgramWithOfferings(BaseModel):
     category: Optional[str]
     duration_years: Optional[int]
     fee: Optional[float]
-    shift: str
+    shift: ShiftType
     description: Optional[str]
     
     # Form Fields (program-level)
@@ -155,8 +159,8 @@ class ActiveCycleDetail(BaseModel):
     id: UUID
     name: str
     academic_year: str
-    session: str
-    status: str
+    session: AcademicSession
+    status: AdmissionCycleStatus
     application_start_date: datetime
     application_end_date: datetime
     description: Optional[str]
@@ -171,8 +175,8 @@ class InstituteDetailedInfo(BaseModel):
     id: UUID
     name: str
     institute_code: str
-    institute_type: str
-    institute_level: str
+    institute_type: InstituteType
+    institute_level: InstituteLevel
     established_year: Optional[int]
     regulatory_body: Optional[str]
     registration_number: Optional[str]

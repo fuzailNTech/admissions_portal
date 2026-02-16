@@ -5,7 +5,7 @@ from uuid import UUID
 from typing import Optional, List
 
 from app.database.config.db import get_db
-from app.database.models.institute import Institute, Campus, Program, CampusProgram
+from app.database.models.institute import Institute, Campus, Program, CampusProgram, InstituteStatus
 from app.database.models.admission import (
     CampusAdmissionCycle,
     ProgramAdmissionCycle,
@@ -63,7 +63,7 @@ def list_institutes(
     Students can browse available institutes and filter by location/type.
     """
     # Base query - only active institutes
-    query = db.query(Institute).filter(Institute.status == "active")
+    query = db.query(Institute).filter(Institute.status == InstituteStatus.ACTIVE)
 
     # Search by name (partial match, case-insensitive)
     if search:
@@ -178,7 +178,7 @@ def get_institute_details(
     # Get institute
     institute = (
         db.query(Institute)
-        .filter(Institute.id == institute_id, Institute.status == "active")
+        .filter(Institute.id == institute_id, Institute.status == InstituteStatus.ACTIVE)
         .first()
     )
 

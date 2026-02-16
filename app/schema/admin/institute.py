@@ -5,7 +5,7 @@ from uuid import UUID
 
 
 # Import enums from models
-from app.database.models.institute import CampusType, InstituteType, InstituteStatus, InstituteLevel
+from app.database.models.institute import CampusType, InstituteType, InstituteStatus, InstituteLevel, ShiftType
 
 
 # Institute Schemas
@@ -96,7 +96,7 @@ class ProgramCreate(BaseModel):
     category: Optional[str] = Field(None, description="Science, Arts, Commerce")
     duration_years: Optional[int] = Field(None, ge=1, le=10)
     fee: Optional[float] = Field(None, ge=0, description="Program fee amount")
-    shift: str = Field(default="morning", description="morning, afternoon, evening")
+    shift: ShiftType = Field(default=ShiftType.MORNING, description="morning, afternoon, evening")
     description: Optional[str] = None
     custom_metadata: Dict[str, Any] = Field(default_factory=dict)
     is_active: bool = True
@@ -109,7 +109,7 @@ class ProgramUpdate(BaseModel):
     category: Optional[str] = None
     duration_years: Optional[int] = Field(None, ge=1, le=10)
     fee: Optional[float] = Field(None, ge=0)
-    shift: Optional[str] = Field(None, description="morning, afternoon, evening")
+    shift: Optional[ShiftType] = Field(None, description="morning, afternoon, evening")
     description: Optional[str] = None
     custom_metadata: Optional[Dict[str, Any]] = None
     is_active: Optional[bool] = None
@@ -124,7 +124,7 @@ class ProgramResponse(BaseModel):
     category: Optional[str]
     duration_years: Optional[int]
     fee: Optional[float]
-    shift: str
+    shift: ShiftType
     description: Optional[str]
     is_active: bool
     created_at: datetime
