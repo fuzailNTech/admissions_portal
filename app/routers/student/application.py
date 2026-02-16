@@ -11,7 +11,12 @@ from app.database.models.workflow import (
 )
 from app.database.models.institute import Institute
 from app.database.models.auth import User
-from app.schema.student.application import ApplicationCreate, ApplicationResponse
+from app.schema.student.application import (
+    ApplicationCreate,
+    ApplicationResponse,
+    ApplicationSubmitRequest,
+    ApplicationSubmitResponse,
+)
 from app.utils.auth import get_current_active_user
 from app.bpm.engine import (
     load_spec_from_xml,
@@ -297,3 +302,46 @@ def get_application(
         )
 
     return application
+
+
+@application_router.post("/submit", response_model=ApplicationSubmitResponse, status_code=status.HTTP_201_CREATED)
+def submit_student_application(
+    request: ApplicationSubmitRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Submit student application(s) to one or more programs.
+    
+    This endpoint allows students to apply without prior login. It handles:
+    - New student registration (creates user account with generated password)
+    - Returning student applications (uses existing profile)
+    - Multiple program applications in a single submission
+    - Creates immutable snapshots of submitted data for each application
+    
+    **Flow:**
+    1. Validates all program targets (cycles, quotas, seats availability)
+    2. Creates or retrieves student profile (based on identity document)
+    3. Creates application snapshots (one per program)
+    4. Generates unique application numbers
+    5. Sends email with credentials and confirmation
+    
+    **Authentication:**
+    - No login required to submit
+    - Credentials sent via email for future tracking
+    - Students login using identity document number + password
+    
+    **Identity Document:**
+    - Primary identifier for students
+    - Format: XXXXX-XXXXXXX-X (CNIC or B-Form)
+    - Prevents duplicate registrations
+    
+    **All-or-Nothing:**
+    - All applications succeed together or all fail
+    - Ensures data consistency across multiple program applications
+    """
+    # TODO: Implement business logic
+    # For now, return a placeholder response for API documentation
+    
+    return ApplicationSubmitResponse(
+        message="Application submission endpoint - Business logic to be implemented. Check your email for details."
+    )

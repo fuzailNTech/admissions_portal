@@ -578,3 +578,52 @@ class ApplicationStatusHistory(Base):
     __table_args__ = (
         Index('ix_status_history_application_created', 'application_id', 'created_at'),
     )
+
+
+class ApplicationNumberSequence(Base):
+    """Sequential counter for generating application numbers per institute per academic year."""
+    __tablename__ = "application_number_sequences"
+    
+    # Primary Key
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+    )
+    
+    # ==================== SEQUENCE IDENTIFIER ====================
+    institute_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("institutes.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    academic_year = Column(
+        String(10),
+        nullable=False,
+        index=True,
+    )
+    # Format: "2026" or "2026-27" depending on institution preference
+    
+    # ==================== COUNTER ====================
+    last_number = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+    # Current counter value - incremented for each new application
+    
+    # ==================== METADATA ====================
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # ==================== RELATIONSHIPS ====================
+    institute = relationship("Institute", foreign_keys=[institute_id])
+    
+    # ==================== CONSTRAINTS ====================
+    __table_args__ = (
+        UniqueConstraint('institute_id', 'academic_year', name='uq_institute_year_sequence'),
+        Index('ix_sequence_institute_year', 'institute_id', 'academic_year'),
+    )
