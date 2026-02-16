@@ -51,7 +51,6 @@ class User(Base):
     )
     student_profile = relationship(
         "StudentProfile",
-        foreign_keys="StudentProfile.user_id",
         back_populates="user",
         uselist=False,
         cascade="all, delete-orphan"
