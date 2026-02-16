@@ -9,39 +9,39 @@ import enum
 
 class InstituteType(str, enum.Enum):
     """Type of educational institute"""
-    GOVERNMENT = "GOVERNMENT"
-    PRIVATE = "PRIVATE"
-    SEMI_GOVERNMENT = "SEMI_GOVERNMENT"
+    GOVERNMENT = "government"
+    PRIVATE = "private"
+    SEMI_GOVERNMENT = "semi_government"
 
 
 class InstituteStatus(str, enum.Enum):
     """Current operational status of institute"""
-    ACTIVE = "ACTIVE"
-    INACTIVE = "INACTIVE"
-    SUSPENDED = "SUSPENDED"
-    PENDING_APPROVAL = "PENDING_APPROVAL"
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    SUSPENDED = "suspended"
+    PENDING_APPROVAL = "pending_approval"
 
 
 class InstituteLevel(str, enum.Enum):
     """Level of education provided"""
-    UNIVERSITY = "UNIVERSITY"
-    COLLEGE = "COLLEGE"
-    INSTITUTE = "INSTITUTE"
-    SCHOOL = "SCHOOL"
+    UNIVERSITY = "university"
+    COLLEGE = "college"
+    INSTITUTE = "institute"
+    SCHOOL = "school"
 
 
 class CampusType(str, enum.Enum):
     """Type of campus by gender"""
-    BOYS = "BOYS"
-    GIRLS = "GIRLS"
-    CO_ED = "CO_ED"  # Co-educational (both)
+    BOYS = "boys"
+    GIRLS = "girls"
+    CO_ED = "co_ed"  # Co-educational (both)
 
 
 class ShiftType(str, enum.Enum):
     """Program shift timings"""
-    MORNING = "MORNING"
-    AFTERNOON = "AFTERNOON"
-    EVENING = "EVENING"
+    MORNING = "morning"
+    AFTERNOON = "afternoon"
+    EVENING = "evening"
 
 
 class Institute(Base):
@@ -179,7 +179,7 @@ class Program(Base):
 
     # Fee and Shift
     fee = Column(Numeric(10, 2), nullable=True)  # Program fee amount
-    shift = Column(SQLEnum(ShiftType, name="shifttype"), nullable=False, server_default="MORNING", index=True)  # Morning, Afternoon, Evening
+    shift = Column(SQLEnum(ShiftType, name="shifttype"), nullable=False, server_default="morning", index=True)  # Morning, Afternoon, Evening
 
     # Description
     description = Column(String, nullable=True)

@@ -21,42 +21,42 @@ from app.database.config.db import Base
 
 class AcademicSession(str, enum.Enum):
     """Academic session/year"""
-    SPRING = "SPRING"   # Jan-Jun (less common for intermediate)
-    FALL = "FALL"       # Aug-Dec (rare for intermediate)
-    ANNUAL = "ANNUAL"   # Most common for intermediate colleges
-    SUMMER = "SUMMER"   # Summer programs
+    SPRING = "spring"   # Jan-Jun (less common for intermediate)
+    FALL = "fall"       # Aug-Dec (rare for intermediate)
+    ANNUAL = "annual"   # Most common for intermediate colleges
+    SUMMER = "summer"   # Summer programs
 
 
 class AdmissionCycleStatus(str, enum.Enum):
     """Status of admission cycle"""
-    DRAFT = "DRAFT"          # Being prepared
-    UPCOMING = "UPCOMING"    # Published but not started
-    OPEN = "OPEN"            # Applications being accepted
-    CLOSED = "CLOSED"        # Applications closed
-    COMPLETED = "COMPLETED"  # All admissions finalized
-    CANCELLED = "CANCELLED"  # Cycle cancelled
+    DRAFT = "draft"          # Being prepared
+    UPCOMING = "upcoming"    # Published but not started
+    OPEN = "open"            # Applications being accepted
+    CLOSED = "closed"        # Applications closed
+    COMPLETED = "completed"  # All admissions finalized
+    CANCELLED = "cancelled"  # Cycle cancelled
 
 
 class QuotaType(str, enum.Enum):
     """Types of admission quotas"""
-    OPEN_MERIT = "OPEN_MERIT"
-    HAFIZ_E_QURAN = "HAFIZ_E_QURAN"
-    SPORTS = "SPORTS"
-    MINORITY = "MINORITY"
-    DISTRICT_RESERVED = "DISTRICT_RESERVED"
-    SIBLING = "SIBLING"
-    EMPLOYEE_CHILDREN = "EMPLOYEE_CHILDREN"
-    DISABLED = "DISABLED"
-    OVERSEAS_PAKISTANI = "OVERSEAS_PAKISTANI"
-    DEFENSE_FORCES = "DEFENSE_FORCES"  # Armed forces personnel children
-    CUSTOM = "CUSTOM"  # For institute-specific quotas
+    OPEN_MERIT = "open_merit"
+    HAFIZ_E_QURAN = "hafiz_e_quran"
+    SPORTS = "sports"
+    MINORITY = "minority"
+    DISTRICT_RESERVED = "district_reserved"
+    SIBLING = "sibling"
+    EMPLOYEE_CHILDREN = "employee_children"
+    DISABLED = "disabled"
+    OVERSEAS_PAKISTANI = "overseas_pakistani"
+    DEFENSE_FORCES = "defense_forces"  # Armed forces personnel children
+    CUSTOM = "custom"  # For institute-specific quotas
 
 
 class QuotaStatus(str, enum.Enum):
     """Status of quota"""
-    ACTIVE = "ACTIVE"
-    FILLED = "FILLED"
-    SUSPENDED = "SUSPENDED"
+    ACTIVE = "active"
+    FILLED = "filled"
+    SUSPENDED = "suspended"
 
 
 class AdmissionCycle(Base):
@@ -311,16 +311,16 @@ class ProgramQuota(Base):
 
 class FieldType(str, enum.Enum):
     """Types of custom form fields"""
-    TEXT = "TEXT"          # Single line text
-    TEXTAREA = "TEXTAREA"  # Multi-line text
-    NUMBER = "NUMBER"
-    EMAIL = "EMAIL"
-    TEL = "TEL"            # Phone number
-    DATE = "DATE"
-    SELECT = "SELECT"      # Dropdown
-    RADIO = "RADIO"        # Radio buttons
-    CHECKBOX = "CHECKBOX"  # Multiple checkboxes
-    FILE = "FILE"          # File upload
+    TEXT = "text"          # Single line text
+    TEXTAREA = "textarea"  # Multi-line text
+    NUMBER = "number"
+    EMAIL = "email"
+    TEL = "tel"            # Phone number
+    DATE = "date"
+    SELECT = "select"      # Dropdown
+    RADIO = "radio"        # Radio buttons
+    CHECKBOX = "checkbox"  # Multiple checkboxes
+    FILE = "file"          # File upload
 
 
 class CustomFormField(Base):
