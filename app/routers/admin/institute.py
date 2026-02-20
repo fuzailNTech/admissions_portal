@@ -37,6 +37,7 @@ institute_router = APIRouter(prefix="/institute", tags=["Admin - Institute Manag
 
 # ==================== INSTITUTE ENDPOINTS ====================
 
+
 @institute_router.get("", response_model=InstituteResponse)
 def get_my_institute(
     staff: StaffProfile = Depends(get_current_staff),
@@ -44,20 +45,18 @@ def get_my_institute(
 ):
     """
     Get the institute information for the current staff member.
-    
+
     Staff members can only access their own institute information.
     """
     # Get institute from staff's institute_id
-    institute = db.query(Institute).filter(
-        Institute.id == staff.institute_id
-    ).first()
-    
+    institute = db.query(Institute).filter(Institute.id == staff.institute_id).first()
+
     if not institute:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Institute not found",
         )
-    
+
     return institute
 
 
@@ -71,15 +70,18 @@ def get_programs(
 ):
     """
     Get all programs for the institute.
-    
+
     Only institute admins can view all programs.
     Campus admins will have a separate endpoint for campus-specific programs.
     """
-    programs = db.query(Program).filter(
-        Program.institute_id == staff.institute_id,
-        Program.is_active == True
-    ).all()
-    
+    programs = (
+        db.query(Program)
+        .filter(
+            Program.institute_id == staff.institute_id,
+        )
+        .all()
+    )
+
     return programs
 
 
@@ -93,14 +95,14 @@ def create_program(
 ):
     """
     Create a new program for the institute.
-    
+
     Only institute admins can create programs.
     The program will be created for the staff's institute automatically.
     """
     # Override institute_id with staff's institute
     program_data = program.model_dump()
-    program_data['institute_id'] = staff.institute_id
-    
+    program_data["institute_id"] = staff.institute_id
+
     try:
         db_program = Program(**program_data)
         db.add(db_program)
@@ -130,7 +132,7 @@ def update_program(
 ):
     """
     Update a program.
-    
+
     Only institute admins can update programs.
     Can only update programs in their own institute.
     """
@@ -141,7 +143,7 @@ def update_program(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Program not found",
         )
-    
+
     # Check if program belongs to staff's institute
     if not can_access_institute(db_program.institute_id, staff):
         raise HTTPException(
@@ -182,7 +184,7 @@ def delete_program(
 ):
     """
     Delete a program.
-    
+
     Only institute admins can delete programs.
     Can only delete programs in their own institute.
     """
@@ -193,7 +195,7 @@ def delete_program(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Program not found",
         )
-    
+
     # Check if program belongs to staff's institute
     if not can_access_institute(db_program.institute_id, staff):
         raise HTTPException(
@@ -223,7 +225,7 @@ def get_campuses(
 ):
     """
     Get campuses accessible by the current staff member.
-    
+
     - Institute Admin: Returns ALL campuses in their institute
     - Campus Admin: Returns ONLY assigned campuses
     """
@@ -241,15 +243,15 @@ def create_campus(
 ):
     """
     Create a new campus for the institute.
-    
+
     Only institute admins can create campuses.
     The campus will be created for the staff's institute automatically.
     """
     # Override institute_id with staff's institute
     campus_data = campus.model_dump()
-    campus_data['institute_id'] = staff.institute_id
-    campus_data['created_by'] = staff.user_id
-    
+    campus_data["institute_id"] = staff.institute_id
+    campus_data["created_by"] = staff.user_id
+
     try:
         db_campus = Campus(**campus_data)
         db.add(db_campus)
@@ -279,7 +281,7 @@ def update_campus(
 ):
     """
     Update a campus.
-    
+
     Only institute admins can update campuses.
     Can only update campuses in their own institute.
     """
@@ -290,7 +292,7 @@ def update_campus(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Campus not found",
         )
-    
+
     # Check if campus belongs to staff's institute
     if not can_access_institute(db_campus.institute_id, staff):
         raise HTTPException(
@@ -349,13 +351,11 @@ def delete_campus(
         )
 
 
-
 # ==================== CAMPUS PROGRAM ENDPOINTS (Junction Table) ====================
 
 
 @institute_router.get(
-    "/campus/{campus_id}/campus-programs",
-    response_model=CampusWithProgramsResponse
+    "/campus/{campus_id}/campus-programs", response_model=CampusWithProgramsResponse
 )
 def list_campus_programs(
     campus_id: UUID,
@@ -364,7 +364,7 @@ def list_campus_programs(
 ):
     """
     Get detailed campus information with all assigned programs.
-    
+
     Staff can only access if they have access to the campus.
     Returns campus info with nested program details.
     """
@@ -375,14 +375,14 @@ def list_campus_programs(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Campus not found",
         )
-    
+
     # Check if staff can access the campus
     if not can_access_campus(campus_id, staff, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied to this campus",
         )
-    
+
     # Get all campus-programs with program details
     campus_programs = (
         db.query(CampusProgram, Program)
@@ -390,7 +390,7 @@ def list_campus_programs(
         .filter(CampusProgram.campus_id == campus_id)
         .all()
     )
-    
+
     # Build program list with details
     programs = []
     for cp, program in campus_programs:
@@ -414,7 +414,7 @@ def list_campus_programs(
                 updated_at=program.updated_at,
             )
         )
-    
+
     # Build response with campus info and programs
     return CampusWithProgramsResponse(
         id=campus.id,
@@ -450,7 +450,7 @@ def assign_program_to_campus(
 ):
     """
     Assign a program to a campus.
-    
+
     Only institute admins can assign programs to campuses.
     Both campus and program must belong to the staff's institute.
     """
@@ -461,7 +461,7 @@ def assign_program_to_campus(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Campus not found",
         )
-    
+
     # Check if campus belongs to staff's institute
     if not can_access_institute(campus.institute_id, staff):
         raise HTTPException(
@@ -476,7 +476,7 @@ def assign_program_to_campus(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Program not found",
         )
-    
+
     # Check if program belongs to staff's institute
     if not can_access_institute(program.institute_id, staff):
         raise HTTPException(
@@ -486,8 +486,8 @@ def assign_program_to_campus(
 
     # Create campus-program with campus_id from path
     campus_program_data = campus_program.model_dump()
-    campus_program_data['campus_id'] = campus_id
-    campus_program_data['created_by'] = staff.user_id
+    campus_program_data["campus_id"] = campus_id
+    campus_program_data["created_by"] = staff.user_id
 
     try:
         db_campus_program = CampusProgram(**campus_program_data)
@@ -511,7 +511,7 @@ def assign_program_to_campus(
 
 @institute_router.patch(
     "/campus/{campus_id}/campus-programs/{campus_program_id}",
-    response_model=CampusProgramResponse
+    response_model=CampusProgramResponse,
 )
 def update_campus_program(
     campus_id: UUID,
@@ -522,7 +522,7 @@ def update_campus_program(
 ):
     """
     Update a campus-program assignment (e.g., activate/deactivate).
-    
+
     Only institute admins can update campus-program assignments.
     Can only update assignments in their own institute.
     """
@@ -533,19 +533,22 @@ def update_campus_program(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Campus not found",
         )
-    
+
     if not can_access_institute(campus.institute_id, staff):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied to this campus",
         )
-    
+
     # Get campus-program assignment and verify it belongs to this campus
-    db_campus_program = db.query(CampusProgram).filter(
-        CampusProgram.id == campus_program_id,
-        CampusProgram.campus_id == campus_id
-    ).first()
-    
+    db_campus_program = (
+        db.query(CampusProgram)
+        .filter(
+            CampusProgram.id == campus_program_id, CampusProgram.campus_id == campus_id
+        )
+        .first()
+    )
+
     if not db_campus_program:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -571,7 +574,7 @@ def update_campus_program(
 
 @institute_router.delete(
     "/campus/{campus_id}/campus-programs/{campus_program_id}",
-    status_code=status.HTTP_204_NO_CONTENT
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 def remove_program_from_campus(
     campus_id: UUID,
@@ -581,7 +584,7 @@ def remove_program_from_campus(
 ):
     """
     Remove a program from a campus.
-    
+
     Only institute admins can remove program assignments.
     Can only remove assignments in their own institute.
     """
@@ -592,19 +595,22 @@ def remove_program_from_campus(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Campus not found",
         )
-    
+
     if not can_access_institute(campus.institute_id, staff):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied to this campus",
         )
-    
+
     # Get campus-program assignment and verify it belongs to this campus
-    db_campus_program = db.query(CampusProgram).filter(
-        CampusProgram.id == campus_program_id,
-        CampusProgram.campus_id == campus_id
-    ).first()
-    
+    db_campus_program = (
+        db.query(CampusProgram)
+        .filter(
+            CampusProgram.id == campus_program_id, CampusProgram.campus_id == campus_id
+        )
+        .first()
+    )
+
     if not db_campus_program:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

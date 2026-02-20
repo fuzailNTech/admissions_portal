@@ -151,7 +151,7 @@ class AppliedProgramSubmit(BaseModel):
     """Program application target information"""
     
     institute_id: UUID = Field(..., description="Institute ID")
-    program_cycle_id: UUID = Field(..., description="Program admission cycle ID")
+    program_id: UUID = Field(..., description="Program ID")
     preferred_campus_id: UUID = Field(..., description="Preferred campus ID")
     quota_id: UUID = Field(..., description="Quota ID to apply under")
 
@@ -219,7 +219,7 @@ class ApplicationSubmitRequest(BaseModel):
                 "applied_programs": [
                     {
                         "institute_id": "123e4567-e89b-12d3-a456-426614174000",
-                        "program_cycle_id": "123e4567-e89b-12d3-a456-426614174001",
+                        "program_id": "123e4567-e89b-12d3-a456-426614174001",
                         "preferred_campus_id": "123e4567-e89b-12d3-a456-426614174002",
                         "quota_id": "123e4567-e89b-12d3-a456-426614174003"
                     }

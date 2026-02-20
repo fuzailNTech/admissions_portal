@@ -6,6 +6,8 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+import secrets
+import string
 
 from app.database.config.db import get_db
 from app.database.models.auth import User, StaffProfile, StaffCampus, StaffRoleType
@@ -27,6 +29,21 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def get_password_hash(password: str) -> str:
     """Hash a password."""
     return pwd_context.hash(password)
+
+
+def generate_strong_password(length: int = 12) -> str:
+    """
+    Generate a strong random password.
+
+    Args:
+        length: Length of password (default: 12)
+
+    Returns:
+        Randomly generated password containing letters, digits, and special characters
+    """
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    password = "".join(secrets.choice(alphabet) for _ in range(length))
+    return password
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -228,11 +245,7 @@ def get_accessible_campuses(staff: StaffProfile, db: Session) -> List[Campus]:
     """
     if staff.role == StaffRoleType.INSTITUTE_ADMIN:
         # Institute admin has access to all campuses in their institute
-        return (
-            db.query(Campus)
-            .filter(Campus.institute_id == staff.institute_id, Campus.is_active == True)
-            .all()
-        )
+        return db.query(Campus).filter(Campus.institute_id == staff.institute_id).all()
 
     elif staff.role == StaffRoleType.CAMPUS_ADMIN:
         # Campus admin has access only to assigned campuses
