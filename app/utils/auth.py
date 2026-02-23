@@ -12,6 +12,7 @@ import string
 from app.database.config.db import get_db
 from app.database.models.auth import User, StaffProfile, StaffCampus, StaffRoleType
 from app.database.models.institute import Institute, Campus
+from app.database.models.student import StudentProfile
 from app.settings import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_ACCESS_TOKEN_EXPIRE_MINUTES
 
 # Password hashing
@@ -133,6 +134,31 @@ def get_current_staff(
         )
 
     return staff_profile
+
+
+def get_current_student(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> StudentProfile:
+    """
+    Get the current student profile.
+    Raises 403 if user doesn't have a student profile.
+
+    Use this as a dependency to ensure user is a student.
+
+    Usage:
+        @router.get("/endpoint")
+        def endpoint(student: StudentProfile = Depends(get_current_student)):
+            ...
+    """
+    student_profile = (
+        db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
+    )
+    if not student_profile:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Student access required",
+        )
+    return student_profile
 
 
 def is_super_admin(user: User) -> bool:

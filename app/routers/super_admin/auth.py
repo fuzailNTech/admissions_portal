@@ -80,6 +80,7 @@ def super_admin_login(
         email=user.email,
         access_token=access_token,
         last_login=user.last_login_at,
+        is_temporary_password=user.is_temporary_password,
     )
 
 

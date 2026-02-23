@@ -1,9 +1,15 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
 
 from app.database.models.auth import StaffRoleType
+
+
+class AdminUpdatePasswordRequest(BaseModel):
+    """Request to update admin password (current + new)."""
+    current_password: str = Field(..., min_length=1, description="Current password")
+    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
 
 
 class AdminLoginRequest(BaseModel):
@@ -18,7 +24,8 @@ class AdminLoginResponse(BaseModel):
     token: str
     role: StaffRoleType  # Staff role (INSTITUTE_ADMIN or CAMPUS_ADMIN)
     last_login: datetime
-    
+    is_temporary_password: bool = False
+
     class Config:
         from_attributes = True
 
