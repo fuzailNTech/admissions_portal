@@ -4,11 +4,19 @@ from datetime import datetime
 
 from app.database.config.db import get_db
 from app.database.models.auth import User, StaffProfile
-from app.schema.admin.auth import AdminLoginRequest, AdminLoginResponse, AdminMeResponse, StaffInfo
+from app.schema.admin.auth import (
+    AdminLoginRequest,
+    AdminLoginResponse,
+    AdminMeResponse,
+    AdminUpdatePasswordRequest,
+    StaffInfo,
+)
 from app.utils.auth import (
     verify_password,
+    get_password_hash,
     create_access_token,
     get_current_user,
+    get_current_staff,
 )
 
 admin_auth_router = APIRouter(prefix="/auth", tags=["Admin - Auth"])
@@ -87,49 +95,60 @@ def admin_login(
         token=access_token,
         role=staff_profile.role,
         last_login=user.last_login_at,
+        is_temporary_password=user.is_temporary_password,
     )
 
 
 @admin_auth_router.get("/me", response_model=AdminMeResponse)
 def get_current_admin(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    staff: StaffProfile = Depends(get_current_staff),
 ):
     """
     Get current authenticated admin (staff) user information.
-    
-    
+
     Returns full user details including staff profile.
     """
-    # Verify user has staff profile
-    staff_profile = db.query(StaffProfile).filter(
-        StaffProfile.user_id == current_user.id
-    ).first()
-    
-    if not staff_profile or not staff_profile.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User does not have staff access",
-        )
-
-    # Build staff info
+    user = staff.user
     staff_info = StaffInfo(
-        id=staff_profile.id,
-        first_name=staff_profile.first_name,
-        last_name=staff_profile.last_name,
-        phone_number=staff_profile.phone_number,
-        profile_picture_url=staff_profile.profile_picture_url,
-        role=staff_profile.role,
-        institute_id=staff_profile.institute_id,
-        is_active=staff_profile.is_active,
+        id=staff.id,
+        first_name=staff.first_name,
+        last_name=staff.last_name,
+        phone_number=staff.phone_number,
+        profile_picture_url=staff.profile_picture_url,
+        role=staff.role,
+        institute_id=staff.institute_id,
+        is_active=staff.is_active,
     )
-
     return AdminMeResponse(
-        user_id=current_user.id,
-        email=current_user.email,
-        is_active=current_user.is_active,
-        verified=current_user.verified,
-        last_login=current_user.last_login_at,
-        created_at=current_user.created_at,
+        user_id=user.id,
+        email=user.email,
+        is_active=user.is_active,
+        verified=user.verified,
+        last_login=user.last_login_at,
+        created_at=user.created_at,
         staff_profile=staff_info,
     )
+
+
+@admin_auth_router.put("/password", status_code=status.HTTP_204_NO_CONTENT)
+def update_password(
+    body: AdminUpdatePasswordRequest,
+    staff: StaffProfile = Depends(get_current_staff),
+    db: Session = Depends(get_db),
+):
+    """
+    Update the authenticated admin's password.
+
+    Requires current password. On success, the password is set to permanent
+    (is_temporary_password is set to False).
+    """
+    user = staff.user
+    if not verify_password(body.current_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+
+    user.password_hash = get_password_hash(body.new_password)
+    user.is_temporary_password = False
+    db.commit()

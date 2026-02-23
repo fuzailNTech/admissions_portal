@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import Dict, Tuple, Optional
 from uuid import UUID
@@ -40,6 +40,7 @@ from app.schema.student.application import (
 )
 from app.utils.auth import get_current_active_user, get_password_hash, generate_strong_password
 from app.utils.admission import generate_application_number
+from app.utils.smtp import send_mail
 from datetime import datetime
 from app.bpm.engine import (
     load_spec_from_xml,
@@ -330,6 +331,7 @@ def get_application(
 @application_router.post("/submit", response_model=ApplicationSubmitResponse, status_code=status.HTTP_201_CREATED)
 def submit_student_application(
     request: ApplicationSubmitRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     """
@@ -542,10 +544,11 @@ def submit_student_application(
                 # Generate password
                 student_password = generate_strong_password()
                 
-                # Create user
+                # Create user (generated password is temporary until user changes it)
                 user = User(
                     email=request.student_profile.primary_email,
                     password_hash=get_password_hash(student_password),
+                    is_temporary_password=True,
                     verified=False,
                     is_active=True
                 )
@@ -783,22 +786,22 @@ def submit_student_application(
                         # Link workflow to application
                         application.workflow_instance_id = wf_instance.id
                         
-                        # Run service tasks
-                        should_persist, waiting_task_ids = run_service_tasks(
-                            wf=workflow,
-                            db=db,
-                            wf_row=wf_instance,
-                            user=user,
-                            auto_persist=False,
-                        )
+                        # # Run service tasks
+                        # should_persist, waiting_task_ids = run_service_tasks(
+                        #     wf=workflow,
+                        #     db=db,
+                        #     wf_row=wf_instance,
+                        #     user=user,
+                        #     auto_persist=False,
+                        # )
                         
-                        # Update workflow state
-                        wf_instance.state = dumps_wf(workflow)
-                        wf_instance.current_tasks = waiting_task_ids
+                        # # Update workflow state
+                        # wf_instance.state = dumps_wf(workflow)
+                        # wf_instance.current_tasks = waiting_task_ids
                         
-                        if workflow.is_completed():
-                            wf_instance.status = "completed"
-                            wf_instance.completed_at = datetime.utcnow()
+                        # if workflow.is_completed():
+                        #     wf_instance.status = "completed"
+                        #     wf_instance.completed_at = datetime.utcnow()
                         
                     except Exception as wf_error:
                         # Log workflow error but don't fail the application
@@ -811,16 +814,23 @@ def submit_student_application(
             db.commit()
             
             # ==================== STEP 4: SEND NOTIFICATIONS ====================
-            # TODO: Implement email sending
-            # For now, just log the details
+            # Student credentials email (new students only). Application received email is handled by workflow.
             if is_new_student and student_password:
-                # Would send welcome email with credentials
-                print(f"Welcome email would be sent to {user.email} with password: {student_password}")
-                print(f"Applications created: {', '.join(application_numbers)}")
-            else:
-                # Would send confirmation email
-                print(f"Confirmation email would be sent to {user.email}")
-                print(f"Applications created: {', '.join(application_numbers)}")
+                recipient = request.student_profile.primary_email
+                identity_doc = request.student_profile.identity_doc_number
+                body_html = (
+                    "<p>Welcome to our platform.</p>"
+                    "<p>Your account has been created. Use the credentials below to log in:</p>"
+                    f"<p><strong>Login (Identity document number):</strong> {identity_doc}</p>"
+                    f"<p><strong>Password:</strong> {student_password}</p>"
+                    "<p>Please change your password after your first login.</p>"
+                )
+                background_tasks.add_task(
+                    send_mail,
+                    recipient,
+                    "Welcome – Your login credentials",
+                    body_html,
+                )
             
             # ==================== STEP 5: RETURN RESPONSE ====================
             return ApplicationSubmitResponse(

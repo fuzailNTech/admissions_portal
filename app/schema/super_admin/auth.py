@@ -17,7 +17,8 @@ class SuperAdminLoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     last_login: Optional[datetime]
-    
+    is_temporary_password: bool = False
+
     class Config:
         from_attributes = True
 

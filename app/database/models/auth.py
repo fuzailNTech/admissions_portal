@@ -29,6 +29,7 @@ class User(Base):
     )
     email = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
+    is_temporary_password = Column(Boolean, default=False, nullable=False)
     verified = Column(Boolean, default=False, nullable=False)
     is_super_admin = Column(Boolean, default=False, nullable=False, index=True)
     is_active = Column(Boolean, default=True, nullable=False)
