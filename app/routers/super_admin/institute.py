@@ -269,17 +269,18 @@ def delete_institute(
 
 
 @institute_router.post(
-    "/assign-institute-admin",
+    "/{institute_id}/assign-institute-admin",
     response_model=AssignInstituteAdminResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def assign_institute_admin(
+    institute_id: UUID,
     assignment: AssignInstituteAdminRequest,
     current_user: User = Depends(require_super_admin),
     db: Session = Depends(get_db),
 ):
     """
-    Assign a user as institute admin.
+    Assign a user as institute admin for this institute.
     Creates a StaffProfile with INSTITUTE_ADMIN role. Only super admins can perform this action.
     """
     user = db.query(User).filter(User.id == assignment.user_id).first()
@@ -298,7 +299,7 @@ def assign_institute_admin(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User must have first_name and last_name set before assignment. Update the user first.",
         )
-    institute = db.query(Institute).filter(Institute.id == assignment.institute_id).first()
+    institute = db.query(Institute).filter(Institute.id == institute_id).first()
     if not institute:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -318,7 +319,7 @@ def assign_institute_admin(
         last_name=user.last_name,
         phone_number=None,
         role=StaffRoleType.INSTITUTE_ADMIN,
-        institute_id=assignment.institute_id,
+        institute_id=institute_id,
         is_active=True,
         assigned_by=current_user.id,
     )

@@ -109,9 +109,8 @@ class InstituteDetailResponse(InstituteResponse):
 
 
 class AssignInstituteAdminRequest(BaseModel):
-    """Request to assign an institute admin. first_name and last_name are taken from the user record."""
+    """Request to assign an institute admin. institute_id is in the path; first_name and last_name are taken from the user record."""
     user_id: UUID = Field(..., description="User ID to assign as admin")
-    institute_id: UUID = Field(..., description="Institute to assign admin to")
 
 
 class AssignInstituteAdminResponse(BaseModel):
