@@ -816,6 +816,7 @@ def submit_student_application(
             # ==================== STEP 4: SEND NOTIFICATIONS ====================
             # Student credentials email (new students only). Application received email is handled by workflow.
             if is_new_student and student_password:
+                print(f"Sending email to {request.student_profile.primary_email} with password {student_password}")
                 recipient = request.student_profile.primary_email
                 identity_doc = request.student_profile.identity_doc_number
                 body_html = (

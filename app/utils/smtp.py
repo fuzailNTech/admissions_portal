@@ -48,4 +48,6 @@ async def send_mail(
         subtype=subtype,
     )
     fm = FastMail(config)
+    print(f"Sending email to {recipients} with subject {subject} and body {body}")
     await fm.send_message(message)
+    print(f"Email sent to {recipients} with subject {subject} and body {body}")
