@@ -25,6 +25,7 @@ class WorkflowDefinitionCreate(BaseModel):
 class WorkflowDefinitionUpdate(BaseModel):
     """Schema for updating a workflow definition."""
     workflow_name: Optional[str] = Field(None, min_length=1, max_length=255, description="Human-readable workflow name")
+    version: Optional[int] = Field(None, ge=1, description="Version number of the workflow")
     manifest_json: Optional[Dict[str, Any]] = Field(None, description="Workflow manifest JSON")
     published: Optional[bool] = Field(None, description="Whether the workflow is published")
     active: Optional[bool] = Field(None, description="Whether the workflow is active")
