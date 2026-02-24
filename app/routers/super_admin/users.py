@@ -74,9 +74,15 @@ def list_users(
     limit: int = 100,
 ):
     """
-    List users with optional pagination.
+    List users with optional pagination. Excludes the logged-in user.
     """
-    users = db.query(User).offset(skip).limit(limit).all()
+    users = (
+        db.query(User)
+        .filter(User.id != current_user.id)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
     return [UserResponse.model_validate(u) for u in users]
 
 
