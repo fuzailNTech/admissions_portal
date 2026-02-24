@@ -28,6 +28,8 @@ class User(Base):
         nullable=False,
     )
     email = Column(String, unique=True, nullable=False, index=True)
+    first_name = Column(String(100), nullable=True)
+    last_name = Column(String(100), nullable=True)
     password_hash = Column(String, nullable=False)
     is_temporary_password = Column(Boolean, default=False, nullable=False)
     verified = Column(Boolean, default=False, nullable=False)
