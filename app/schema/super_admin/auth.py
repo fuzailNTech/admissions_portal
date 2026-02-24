@@ -37,25 +37,3 @@ class SuperAdminMeResponse(BaseModel):
         from_attributes = True
 
 
-class AssignInstituteAdminRequest(BaseModel):
-    """Request to assign an institute admin"""
-    user_id: UUID = Field(..., description="User ID to assign as admin")
-    institute_id: UUID = Field(..., description="Institute to assign admin to")
-    first_name: str = Field(..., min_length=1, max_length=100)
-    last_name: str = Field(..., min_length=1, max_length=100)
-    phone_number: Optional[str] = None
-
-
-class AssignInstituteAdminResponse(BaseModel):
-    """Response after assigning institute admin"""
-    staff_profile_id: UUID
-    user_id: UUID
-    institute_id: UUID
-    first_name: str
-    last_name: str
-    role: str
-    is_active: bool
-    assigned_at: datetime
-    
-    class Config:
-        from_attributes = True

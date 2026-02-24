@@ -1,11 +1,15 @@
 from pydantic import BaseModel, Field, field_validator, EmailStr
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 from uuid import UUID
 import re
 
 # Import enums from models
 from app.database.models.institute import InstituteType, InstituteStatus, InstituteLevel
+from app.database.models.auth import StaffRoleType
+
+# Avoid circular import: use TYPE_CHECKING or import response schema from workflow_definition
+from app.schema.super_admin.workflow_definition import WorkflowDefinitionResponse
 
 
 class InstituteCreate(BaseModel):
@@ -76,6 +80,46 @@ class InstituteResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
     created_by: Optional[UUID]
+
+    class Config:
+        from_attributes = True
+
+
+class InstituteAdminResponse(BaseModel):
+    """Staff/admin of an institute (for institute detail response)."""
+    id: UUID
+    user_id: UUID
+    first_name: str
+    last_name: str
+    role: StaffRoleType
+    is_active: bool
+    assigned_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class InstituteDetailResponse(InstituteResponse):
+    """Institute response including workflow_definitions (without bpmn_xml) and admins."""
+    workflow_definitions: List[WorkflowDefinitionResponse] = []
+    admins: List[InstituteAdminResponse] = []
+
+    class Config:
+        from_attributes = True
+
+
+class AssignInstituteAdminRequest(BaseModel):
+    """Request to assign an institute admin. first_name and last_name are taken from the user record."""
+    user_id: UUID = Field(..., description="User ID to assign as admin")
+    institute_id: UUID = Field(..., description="Institute to assign admin to")
+
+
+class AssignInstituteAdminResponse(BaseModel):
+    """Response after assigning institute admin."""
+    staff_profile_id: UUID
+    user_id: UUID
+    institute_id: UUID
+    assigned_at: datetime
 
     class Config:
         from_attributes = True
