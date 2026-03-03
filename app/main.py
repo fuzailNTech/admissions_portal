@@ -11,6 +11,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:5173",
         "https://college-admin-portal-amber.vercel.app",
+        "https://super-admin-portal-iota.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
