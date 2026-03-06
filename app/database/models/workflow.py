@@ -1,4 +1,5 @@
 import uuid
+from enum import Enum as PyEnum
 from sqlalchemy import (
     Column, String, Boolean, DateTime, LargeBinary, ForeignKey,
     Text, Integer, JSON, Index, UniqueConstraint
@@ -7,6 +8,15 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database.config.db import Base
+
+
+class WorkflowStepStatus(str, PyEnum):
+    """Status of a workflow instance step (subworkflow)."""
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    SKIPPED = "skipped"
 
 
 class WorkflowCatalog(Base):
@@ -22,6 +32,7 @@ class WorkflowCatalog(Base):
         nullable=False,
     )
     subflow_key = Column(String, nullable=False, index=True)  # e.g., "communication.send_email"
+    name = Column(String, nullable=True)  # Human-readable name from BPMN process element
     version = Column(Integer, nullable=False, default=1)
     process_id = Column(String, nullable=False)  # BPMN process ID
     bpmn_xml = Column(Text, nullable=False)  # Subprocess BPMN XML
@@ -37,6 +48,10 @@ class WorkflowCatalog(Base):
 
     # Relationships
     creator = relationship("User")
+    steps = relationship(
+        "WorkflowInstanceStep",
+        back_populates="workflow_catalog",
+    )
 
     # Constraints
     __table_args__ = (
@@ -93,6 +108,66 @@ class WorkflowDefinition(Base):
     )
 
 
+class WorkflowInstanceStep(Base):
+    """
+    One step (subworkflow) in a workflow instance. Tracks progress and waiting tasks per step.
+    Parent process has only call activities; all user tasks live inside these steps.
+    Links to workflow_catalog as single source of truth for subflow_key, version, process_id.
+    """
+    __tablename__ = "workflow_instance_steps"
+
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+    )
+    workflow_instance_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("workflow_instances.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    workflow_catalog_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("workflow_catalog.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    display_order = Column(Integer, nullable=False, default=0)  # Order in parent process
+    status = Column(
+        String(20),
+        nullable=False,
+        default=WorkflowStepStatus.PENDING.value,
+        index=True,
+    )  # pending, in_progress, completed, failed, skipped
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    error_message = Column(Text, nullable=True)  # When status = failed
+    current_tasks = Column(JSON, nullable=True)  # List of waiting task IDs in this subworkflow
+
+    # Relationships
+    workflow_instance = relationship(
+        "WorkflowInstance",
+        back_populates="steps",
+    )
+    workflow_catalog = relationship(
+        "WorkflowCatalog",
+        back_populates="steps",
+        foreign_keys=[workflow_catalog_id],
+    )
+
+    # Constraints
+    __table_args__ = (
+        UniqueConstraint(
+            "workflow_instance_id",
+            "workflow_catalog_id",
+            name="uq_workflow_instance_step_instance_catalog",
+        ),
+    )
+
+
 class WorkflowInstance(Base):
     """Running workflow instances."""
     __tablename__ = "workflow_instances"
@@ -125,8 +200,6 @@ class WorkflowInstance(Base):
         default="running",
         index=True,
     )  # running, completed, failed, cancelled, suspended
-    current_tasks = Column(JSON, nullable=True)  # List of current waiting/user task IDs
-    # e.g., ["CA_Interview", "GW_IfPassed"]
     error_message = Column(Text, nullable=True)  # Error message if status is "failed"
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), index=True)
@@ -135,6 +208,12 @@ class WorkflowInstance(Base):
     # Relationships
     institute = relationship("Institute", back_populates="workflow_instances")
     workflow_definition = relationship("WorkflowDefinition", back_populates="instances")
+    steps = relationship(
+        "WorkflowInstanceStep",
+        back_populates="workflow_instance",
+        order_by="WorkflowInstanceStep.display_order",
+        cascade="all, delete-orphan",
+    )
 
     # Constraints
     __table_args__ = (

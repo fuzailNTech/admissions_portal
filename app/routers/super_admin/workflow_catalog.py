@@ -53,6 +53,7 @@ def create_subworkflow(
 
         db_subworkflow = WorkflowCatalog(
             subflow_key=subworkflow.subflow_key,
+            name=subworkflow.name,
             version=subworkflow.version,
             process_id=subworkflow.process_id,
             bpmn_xml=subworkflow.bpmn_xml,

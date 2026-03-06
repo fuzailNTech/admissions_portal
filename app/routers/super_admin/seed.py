@@ -39,6 +39,21 @@ def extract_process_id_from_bpmn(xml_content: str) -> str:
         raise ValueError(f"Error parsing BPMN XML: {str(e)}")
 
 
+def extract_process_name_from_bpmn(xml_content: str) -> str | None:
+    """Extract the process name from BPMN XML (name attribute on the process element)."""
+    try:
+        root = ET.fromstring(xml_content)
+        namespaces = {'bpmn': 'http://www.omg.org/spec/BPMN/20100524/MODEL'}
+        process = root.find('.//bpmn:process', namespaces)
+        if process is not None:
+            name = process.get('name')
+            if name and name.strip():
+                return name.strip()
+        return None
+    except Exception:
+        return None
+
+
 def extract_subflow_key_from_process_id(process_id: str) -> str:
     """
     Extract subflow_key from process_id.
@@ -65,15 +80,17 @@ def extract_version_from_process_id(process_id: str) -> int:
 
 @seed_router.post("/workflow-catalog")
 def seed_workflow_catalog(
+    update_existing: bool = False,
     current_user: User = Depends(require_super_admin),
     db: Session = Depends(get_db),
 ):
     """
     Seed WorkflowCatalog with BPMN files from bpm/workflows directory.
-    
+
     Requires super admin role.
     Reads all .bpmn files and creates catalog entries.
-    Skips files that already exist in the catalog.
+    If update_existing is False (default), skips files that already exist.
+    If update_existing is True, updates existing catalog entries with data from the BPMN file.
     """
     if not os.path.exists(BPMN_DIR):
         raise HTTPException(
@@ -92,6 +109,7 @@ def seed_workflow_catalog(
     
     results = {
         "created": [],
+        "updated": [],
         "skipped": [],
         "errors": [],
     }
@@ -108,25 +126,44 @@ def seed_workflow_catalog(
             process_id = extract_process_id_from_bpmn(bpmn_xml)
             subflow_key = extract_subflow_key_from_process_id(process_id)
             version = extract_version_from_process_id(process_id)
-            
+            name = extract_process_name_from_bpmn(bpmn_xml)
+
             # Check if already exists
             existing = db.query(WorkflowCatalog).filter(
                 WorkflowCatalog.subflow_key == subflow_key,
                 WorkflowCatalog.version == version
             ).first()
-            
+
             if existing:
-                results["skipped"].append({
-                    "filename": filename,
-                    "subflow_key": subflow_key,
-                    "version": version,
-                    "reason": "Already exists in catalog"
-                })
+                if update_existing:
+                    existing.name = name
+                    existing.process_id = process_id
+                    existing.bpmn_xml = bpmn_xml
+                    existing.description = f"Workflow: {filename.replace('.bpmn', '').replace('_', ' ').title()}"
+                    db.commit()
+                    db.refresh(existing)
+                    results["updated"].append({
+                        "id": str(existing.id),
+                        "filename": filename,
+                        "subflow_key": subflow_key,
+                        "name": existing.name,
+                        "version": version,
+                        "process_id": process_id,
+                        "published": existing.published,
+                    })
+                else:
+                    results["skipped"].append({
+                        "filename": filename,
+                        "subflow_key": subflow_key,
+                        "version": version,
+                        "reason": "Already exists in catalog"
+                    })
                 continue
-            
+
             # Create workflow catalog entry
             workflow_catalog = WorkflowCatalog(
                 subflow_key=subflow_key,
+                name=name,
                 version=version,
                 process_id=process_id,
                 bpmn_xml=bpmn_xml,
@@ -143,6 +180,7 @@ def seed_workflow_catalog(
                 "id": str(workflow_catalog.id),
                 "filename": filename,
                 "subflow_key": subflow_key,
+                "name": workflow_catalog.name,
                 "version": version,
                 "process_id": process_id,
                 "published": workflow_catalog.published,
@@ -159,6 +197,7 @@ def seed_workflow_catalog(
         "message": "Workflow catalog seeding completed",
         "total_files": len(bpmn_files),
         "created_count": len(results["created"]),
+        "updated_count": len(results["updated"]),
         "skipped_count": len(results["skipped"]),
         "error_count": len(results["errors"]),
         "details": results,

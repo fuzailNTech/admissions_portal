@@ -7,6 +7,7 @@ from uuid import UUID
 class SubworkflowCreate(BaseModel):
     """Schema for creating a new subworkflow."""
     subflow_key: str = Field(..., description="Unique key for the subworkflow, e.g., 'communication.send_email'")
+    name: Optional[str] = Field(None, description="Human-readable name for the subworkflow")
     version: int = Field(default=1, description="Version number of the subworkflow")
     process_id: str = Field(..., description="BPMN process ID")
     bpmn_xml: str = Field(..., description="BPMN XML content for the subworkflow")
@@ -16,6 +17,7 @@ class SubworkflowCreate(BaseModel):
 
 class SubworkflowUpdate(BaseModel):
     """Schema for updating a subworkflow."""
+    name: Optional[str] = Field(None, description="Human-readable name for the subworkflow")
     process_id: Optional[str] = Field(None, description="BPMN process ID")
     bpmn_xml: Optional[str] = Field(None, description="BPMN XML content for the subworkflow")
     description: Optional[str] = Field(None, description="Description of the subworkflow")
@@ -26,6 +28,7 @@ class SubworkflowResponse(BaseModel):
     """Schema for subworkflow response (without bpmn_xml for list endpoints)."""
     id: UUID
     subflow_key: str
+    name: Optional[str]
     version: int
     process_id: str
     description: Optional[str]
@@ -42,6 +45,7 @@ class SubworkflowDetailResponse(BaseModel):
     """Schema for subworkflow detail response (includes bpmn_xml)."""
     id: UUID
     subflow_key: str
+    name: Optional[str]
     version: int
     process_id: str
     bpmn_xml: str
