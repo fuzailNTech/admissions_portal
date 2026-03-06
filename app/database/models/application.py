@@ -32,6 +32,14 @@ class VerificationStatus(str, Enum):
     REJECTED = "rejected"
 
 
+class DocumentType(str, Enum):
+    """Type of application document. submitted_with_application implied by requested_by is null."""
+    PROFILE_PICTURE = "profile_picture"
+    IDENTITY_DOCUMENT = "identity_document"
+    ACADEMIC_RESULT_CARD = "academic_result_card"
+    OTHER = "other"
+
+
 # ==================== MODELS ====================
 
 class Application(Base):
@@ -77,7 +85,7 @@ class Application(Base):
         nullable=False,
         index=True,
     )
-    program_cycle_id = Column(
+    preferred_program_cycle_id = Column(
         UUID(as_uuid=True),
         ForeignKey("program_admission_cycles.id", ondelete="CASCADE"),
         nullable=False,
@@ -139,7 +147,7 @@ class Application(Base):
     user = relationship("User", foreign_keys=[user_id])
     institute = relationship("Institute", foreign_keys=[institute_id])
     preferred_campus = relationship("Campus", foreign_keys=[preferred_campus_id])
-    program_cycle = relationship("ProgramAdmissionCycle", foreign_keys=[program_cycle_id])
+    preferred_program_cycle = relationship("ProgramAdmissionCycle", foreign_keys=[preferred_program_cycle_id])
     quota = relationship("ProgramQuota", foreign_keys=[quota_id])
     snapshot = relationship("ApplicationSnapshot", foreign_keys=[application_snapshot_id], uselist=False)
     workflow_instance = relationship("WorkflowInstance", foreign_keys=[workflow_instance_id])
@@ -148,13 +156,13 @@ class Application(Base):
     documents = relationship("ApplicationDocument", back_populates="application", cascade="all, delete-orphan")
     staff_comments = relationship("ApplicationComment", back_populates="application", cascade="all, delete-orphan")
     student_comments = relationship("StudentComment", back_populates="application", cascade="all, delete-orphan")
-    status_history = relationship("ApplicationStatusHistory", back_populates="application", cascade="all, delete-orphan")
+    log_history = relationship("ApplicationLogHistory", back_populates="application", cascade="all, delete-orphan")
     
     # ==================== INDEXES ====================
     __table_args__ = (
         Index('ix_application_number', 'application_number'),
         Index('ix_application_student_status', 'student_profile_id', 'status'),
-        Index('ix_application_institute_campus_program', 'institute_id', 'preferred_campus_id', 'program_cycle_id'),
+        Index('ix_application_institute_campus_program', 'institute_id', 'preferred_campus_id', 'preferred_program_cycle_id'),
         Index('ix_application_status_submitted', 'status', 'submitted_at'),
         Index('ix_application_assigned', 'assigned_to', 'status'),
     )
@@ -380,6 +388,11 @@ class ApplicationDocument(Base):
     )
     
     # ==================== DOCUMENT DETAILS ====================
+    document_type = Column(
+        SQLEnum(DocumentType, name="documenttype", values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        index=True,
+    )
     document_name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     
@@ -529,10 +542,10 @@ class StudentComment(Base):
     )
 
 
-class ApplicationStatusHistory(Base):
-    """Audit trail for application status changes."""
-    __tablename__ = "application_status_history"
-    
+class ApplicationLogHistory(Base):
+    """Audit log for every action performed on an application (status change, document verified, assigned, etc.)."""
+    __tablename__ = "application_log_history"
+
     # Primary Key
     id = Column(
         UUID(as_uuid=True),
@@ -541,42 +554,35 @@ class ApplicationStatusHistory(Base):
         unique=True,
         nullable=False,
     )
-    
+
     application_id = Column(
         UUID(as_uuid=True),
         ForeignKey("applications.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    
-    # ==================== STATUS CHANGE ====================
-    from_status = Column(
-        SQLEnum(ApplicationStatus, name="applicationstatus", values_callable=lambda x: [e.value for e in x]),
-        nullable=True,  # Null for first entry
-    )
-    to_status = Column(
-        SQLEnum(ApplicationStatus, name="applicationstatus", values_callable=lambda x: [e.value for e in x]),
-        nullable=False,
-    )
-    notes = Column(Text, nullable=True)
-    
+
+    # ==================== ACTION ====================
+    action_type = Column(String(64), nullable=False, index=True)  # e.g. "status_change", "document_verified", "assigned"
+    details = Column(Text, nullable=True)  # Free-form description of the action
+
     # ==================== CHANGED BY ====================
     changed_by = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,  # Null = system change
     )
-    
+
     # ==================== METADATA ====================
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     # ==================== RELATIONSHIPS ====================
-    application = relationship("Application", back_populates="status_history")
+    application = relationship("Application", back_populates="log_history")
     changer = relationship("User", foreign_keys=[changed_by])
-    
+
     # ==================== INDEXES ====================
     __table_args__ = (
-        Index('ix_status_history_application_created', 'application_id', 'created_at'),
+        Index("ix_log_history_application_created", "application_id", "created_at"),
     )
 
 

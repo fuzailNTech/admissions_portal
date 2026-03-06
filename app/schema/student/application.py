@@ -30,7 +30,6 @@ class ApplicationResponse(BaseModel):
     business_key: Optional[str]
     definition: str
     status: str
-    current_tasks: Optional[list]
     error_message: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime]

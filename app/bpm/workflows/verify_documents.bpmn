@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:spiffworkflow="http://spiffworkflow.org/bpmn/schema/1.0/core" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_96f6665" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.0.0-dev">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_96f6665" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.0.0-dev">
   <bpmn:process id="operation.verify_documents_v1" name="Verify Documents" isExecutable="true">
     <bpmn:startEvent id="verify_documents_v1.start_event" name="Start Event">
       <bpmn:outgoing>Flow_17db3yp</bpmn:outgoing>
@@ -41,18 +41,23 @@
     <bpmn:sequenceFlow id="Flow_1lxnx5q" sourceRef="verify_documents_v1.student_reupload" targetRef="verify_documents_v1.verify_documents" />
     <bpmn:serviceTask id="verify_documents_v1.succeeded" name="Verification succeeded">
       <bpmn:incoming>Flow_0k285bg</bpmn:incoming>
-      <bpmn:outgoing>Flow_0f5wtl2</bpmn:outgoing>
+      <bpmn:outgoing>Flow_19vw1l9</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:serviceTask id="verify_documents_v1.failed" name="Verification Failed">
       <bpmn:incoming>Flow_0k2l5at</bpmn:incoming>
-      <bpmn:outgoing>Flow_1rzo6jz</bpmn:outgoing>
+      <bpmn:outgoing>Flow_004ebqm</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:endEvent id="verify_documents_v1.end_event" name="End Event">
-      <bpmn:incoming>Flow_0f5wtl2</bpmn:incoming>
-      <bpmn:incoming>Flow_1rzo6jz</bpmn:incoming>
+      <bpmn:incoming>Flow_0ruobid</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_0f5wtl2" sourceRef="verify_documents_v1.succeeded" targetRef="verify_documents_v1.end_event" />
-    <bpmn:sequenceFlow id="Flow_1rzo6jz" sourceRef="verify_documents_v1.failed" targetRef="verify_documents_v1.end_event" />
+    <bpmn:task id="verify_documents_v1.post_context" name="Post Context">
+      <bpmn:incoming>Flow_19vw1l9</bpmn:incoming>
+      <bpmn:incoming>Flow_004ebqm</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ruobid</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_19vw1l9" sourceRef="verify_documents_v1.succeeded" targetRef="verify_documents_v1.post_context" />
+    <bpmn:sequenceFlow id="Flow_004ebqm" sourceRef="verify_documents_v1.failed" targetRef="verify_documents_v1.post_context" />
+    <bpmn:sequenceFlow id="Flow_0ruobid" sourceRef="verify_documents_v1.post_context" targetRef="verify_documents_v1.end_event" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="operation.verify_documents_v1">
@@ -89,10 +94,14 @@
       <bpmndi:BPMNShape id="Activity_18jyryx_di" bpmnElement="verify_documents_v1.failed">
         <dc:Bounds x="710" y="250" width="100" height="80" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ru642n_di" bpmnElement="verify_documents_v1.post_context">
+        <dc:Bounds x="880" y="137" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0hharn8_di" bpmnElement="verify_documents_v1.end_event">
-        <dc:Bounds x="882" y="159" width="36" height="36" />
+        <dc:Bounds x="1032" y="159" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="874" y="202" width="53" height="14" />
+          <dc:Bounds x="1024" y="202" width="53" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_17db3yp_di" bpmnElement="Flow_17db3yp">
@@ -130,15 +139,19 @@
         <di:waypoint x="470" y="560" />
         <di:waypoint x="470" y="217" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0f5wtl2_di" bpmnElement="Flow_0f5wtl2">
+      <bpmndi:BPMNEdge id="Flow_19vw1l9_di" bpmnElement="Flow_19vw1l9">
         <di:waypoint x="810" y="177" />
-        <di:waypoint x="882" y="177" />
+        <di:waypoint x="880" y="177" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1rzo6jz_di" bpmnElement="Flow_1rzo6jz">
+      <bpmndi:BPMNEdge id="Flow_004ebqm_di" bpmnElement="Flow_004ebqm">
         <di:waypoint x="810" y="290" />
-        <di:waypoint x="846" y="290" />
-        <di:waypoint x="846" y="177" />
-        <di:waypoint x="882" y="177" />
+        <di:waypoint x="845" y="290" />
+        <di:waypoint x="845" y="200" />
+        <di:waypoint x="880" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ruobid_di" bpmnElement="Flow_0ruobid">
+        <di:waypoint x="980" y="177" />
+        <di:waypoint x="1032" y="177" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

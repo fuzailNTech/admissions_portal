@@ -7,7 +7,9 @@ from app.database.config.db import get_db
 from app.database.models.workflow import (
     WorkflowDefinition,
     WorkflowInstance,
+    WorkflowInstanceStep,
     WorkflowCatalog,
+    WorkflowStepStatus,
 )
 from app.database.models.institute import Institute, Program, Campus
 from app.database.models.auth import User
@@ -21,9 +23,11 @@ from app.database.models.application import (
     ApplicationSnapshot,
     ApplicationGuardianSnapshot,
     ApplicationAcademicSnapshot,
-    ApplicationStatusHistory,
+    ApplicationDocument,
+    ApplicationLogHistory,
     ApplicationStatus,
     VerificationStatus,
+    DocumentType,
 )
 from app.database.models.admission import (
     ProgramAdmissionCycle,
@@ -45,9 +49,9 @@ from datetime import datetime
 from app.bpm.engine import (
     load_spec_from_xml,
     create_workflow_instance,
-    run_service_tasks,
     dumps_wf,
 )
+from app.utils.engine import run_service_tasks_and_persist_steps
 
 application_router = APIRouter(
     prefix="/application",
@@ -100,211 +104,247 @@ def build_subprocess_registry(
     return registry
 
 
-def get_default_initial_data() -> dict:
-    """Generate dummy initial data for workflow execution."""
-    return {
-        "email": "applicant@example.com",
-        "user_id": "12345",
-        "application": {
-            "id": "app-001",
-            "name": "John Doe",
-            "marks": 85,
-            "documents": [
-                {"type": "transcript", "status": "uploaded"},
-                {"type": "certificate", "status": "uploaded"},
-            ],
-        },
-        "documents": [
-            {"type": "transcript", "url": "https://example.com/transcript.pdf"},
-            {"type": "certificate", "url": "https://example.com/certificate.pdf"},
-        ],
-        "policy": {
-            "verification": {"limit": 3},
-            "fee": {"base": 1000, "currency": "USD"},
-        },
-    }
-
-
-@application_router.post(
-    "", response_model=ApplicationResponse, status_code=status.HTTP_201_CREATED
-)
-def create_application(
-    application: ApplicationCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-):
+def create_workflow_instance_steps(
+    db: Session,
+    workflow_instance_id: UUID,
+    subprocess_refs: list,
+) -> None:
     """
-    Create a new application and start workflow instance.
-    Uses the active/published workflow definition for the institute.
+    Create WorkflowInstanceStep rows for each subworkflow in this instance.
+    Call after creating and flushing the WorkflowInstance so it has an id.
+    Links each step to workflow_catalog (single source of truth for subflow key, version, process_id).
     """
-    try:
-        # Verify institute exists
-        institute = (
-            db.query(Institute).filter(Institute.id == application.institute_id).first()
-        )
-        if not institute:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Institute with id {application.institute_id} not found",
-            )
-
-        # Get active/published workflow definition for the institute
-        workflow_def = (
-            db.query(WorkflowDefinition)
+    for i, ref in enumerate(subprocess_refs):
+        subflow_key = ref.get("subflow_key")
+        version = ref.get("version")
+        if not all([subflow_key, version is not None]):
+            continue
+        catalog = (
+            db.query(WorkflowCatalog)
             .filter(
-                WorkflowDefinition.institute_id == application.institute_id,
-                WorkflowDefinition.published == True,
-                WorkflowDefinition.active == True,
+                WorkflowCatalog.subflow_key == subflow_key,
+                WorkflowCatalog.version == int(version),
             )
-            .order_by(WorkflowDefinition.version.desc())
             .first()
         )
-
-        if not workflow_def:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No active/published workflow definition found for institute {application.institute_id}",
+        if not catalog:
+            raise ValueError(
+                f"Subworkflow '{subflow_key}_{version}' not found in catalog"
             )
-
-        # Build subprocess registry
-        subprocess_refs = workflow_def.subprocess_refs or []
-        try:
-            subprocess_registry = build_subprocess_registry(subprocess_refs, db)
-            print(f"Built subprocess registry with {len(subprocess_registry)} entries:")
-            for called_element, (xml, process_id) in subprocess_registry.items():
-                print(f"  {called_element} -> process_id: {process_id}")
-                # Verify the calledElement matches the process_id in the subprocess XML
-                if process_id != called_element:
-                    print(
-                        f"  ⚠️  WARNING: calledElement '{called_element}' != process_id '{process_id}'"
-                    )
-        except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e),
-            )
-
-        # Load BPMN spec with subprocesses
-        try:
-            spec, subprocess_specs = load_spec_from_xml(
-                xml_string=workflow_def.bpmn_xml,
-                spec_name=workflow_def.process_id,
-                subprocess_registry=(
-                    subprocess_registry if subprocess_registry else None
-                ),
-            )
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error loading BPMN spec: {str(e)}",
-            )
-
-        # Prepare initial data (merge dummy data with provided data)
-        default_data = get_default_initial_data()
-        initial_data = {**default_data, **(application.initial_data or {})}
-
-        # Create workflow instance with subprocess specs
-        workflow = create_workflow_instance(
-            spec,
-            subprocess_specs=subprocess_specs if subprocess_specs else None,
-            data=initial_data,
+        step = WorkflowInstanceStep(
+            workflow_instance_id=workflow_instance_id,
+            workflow_catalog_id=catalog.id,
+            display_order=i,
+            status=WorkflowStepStatus.PENDING.value,
         )
-
-        # Create workflow instance record
-        wf_instance = WorkflowInstance(
-            institute_id=application.institute_id,
-            workflow_definition_id=workflow_def.id,
-            business_key=application.business_key,
-            definition=workflow_def.process_id,
-            state=dumps_wf(workflow),
-            status="running",
-        )
-
-        db.add(wf_instance)
-        db.flush()  # Flush to get the ID
-
-        # Run the workflow
-        try:
-            should_persist, waiting_task_ids = run_service_tasks(
-                wf=workflow,
-                db=db,
-                wf_row=wf_instance,
-                user=current_user,
-                auto_persist=False,  # We'll persist manually
-            )
-
-            # Update workflow instance with current state
-            wf_instance.state = dumps_wf(workflow)
-            wf_instance.current_tasks = waiting_task_ids
-
-            if workflow.is_completed():
-                wf_instance.status = "completed"
-                from datetime import datetime
-
-                wf_instance.completed_at = datetime.utcnow()
-
-            db.commit()
-            db.refresh(wf_instance)
-
-        except Exception as e:
-            # Mark workflow as failed
-            wf_instance.status = "failed"
-            wf_instance.error_message = str(e)
-            wf_instance.state = dumps_wf(workflow)
-            db.commit()
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error executing workflow: {str(e)}",
-            )
-
-        return wf_instance
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating application: {str(e)}",
-        )
+        db.add(step)
 
 
-@application_router.get(
-    "/institute/{institute_id}", response_model=list[ApplicationResponse]
-)
-def list_applications(
-    institute_id: UUID,
-    skip: int = 0,
-    limit: int = 100,
-    status: str = None,
-    db: Session = Depends(get_db),
-):
-    """
-    List all applications (workflow instances) for an institute.
-    """
-    # Verify institute exists
-    institute = db.query(Institute).filter(Institute.id == institute_id).first()
-    if not institute:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Institute with id {institute_id} not found",
-        )
+# def get_default_initial_data() -> dict:
+#     """Generate dummy initial data for workflow execution."""
+#     return {
+#         "email": "applicant@example.com",
+#         "user_id": "12345",
+#         "application": {
+#             "id": "app-001",
+#             "name": "John Doe",
+#             "marks": 85,
+#             "documents": [
+#                 {"type": "transcript", "status": "uploaded"},
+#                 {"type": "certificate", "status": "uploaded"},
+#             ],
+#         },
+#         "documents": [
+#             {"type": "transcript", "url": "https://example.com/transcript.pdf"},
+#             {"type": "certificate", "url": "https://example.com/certificate.pdf"},
+#         ],
+#         "policy": {
+#             "verification": {"limit": 3},
+#             "fee": {"base": 1000, "currency": "USD"},
+#         },
+#     }
 
-    query = db.query(WorkflowInstance).filter(
-        WorkflowInstance.institute_id == institute_id
-    )
 
-    # Apply filters
-    if status:
-        query = query.filter(WorkflowInstance.status == status)
+# @application_router.post(
+#     "", response_model=ApplicationResponse, status_code=status.HTTP_201_CREATED
+# )
+# def create_application(
+#     application: ApplicationCreate,
+#     db: Session = Depends(get_db),
+#     current_user: User = Depends(get_current_active_user),
+# ):
+#     """
+#     Create a new application and start workflow instance.
+#     Uses the active/published workflow definition for the institute.
+#     """
+#     try:
+#         # Verify institute exists
+#         institute = (
+#             db.query(Institute).filter(Institute.id == application.institute_id).first()
+#         )
+#         if not institute:
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND,
+#                 detail=f"Institute with id {application.institute_id} not found",
+#             )
 
-    # Order by created_at descending
-    query = query.order_by(WorkflowInstance.created_at.desc())
+#         # Get active/published workflow definition for the institute
+#         workflow_def = (
+#             db.query(WorkflowDefinition)
+#             .filter(
+#                 WorkflowDefinition.institute_id == application.institute_id,
+#                 WorkflowDefinition.published == True,
+#                 WorkflowDefinition.active == True,
+#             )
+#             .order_by(WorkflowDefinition.version.desc())
+#             .first()
+#         )
 
-    # Apply pagination
-    applications = query.offset(skip).limit(limit).all()
+#         if not workflow_def:
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND,
+#                 detail=f"No active/published workflow definition found for institute {application.institute_id}",
+#             )
 
-    return applications
+#         # Build subprocess registry
+#         subprocess_refs = workflow_def.subprocess_refs or []
+#         try:
+#             subprocess_registry = build_subprocess_registry(subprocess_refs, db)
+#             print(f"Built subprocess registry with {len(subprocess_registry)} entries:")
+#             for called_element, (xml, process_id) in subprocess_registry.items():
+#                 print(f"  {called_element} -> process_id: {process_id}")
+#                 # Verify the calledElement matches the process_id in the subprocess XML
+#                 if process_id != called_element:
+#                     print(
+#                         f"  ⚠️  WARNING: calledElement '{called_element}' != process_id '{process_id}'"
+#                     )
+#         except ValueError as e:
+#             raise HTTPException(
+#                 status_code=status.HTTP_400_BAD_REQUEST,
+#                 detail=str(e),
+#             )
+
+#         # Load BPMN spec with subprocesses
+#         try:
+#             spec, subprocess_specs = load_spec_from_xml(
+#                 xml_string=workflow_def.bpmn_xml,
+#                 spec_name=workflow_def.process_id,
+#                 subprocess_registry=(
+#                     subprocess_registry if subprocess_registry else None
+#                 ),
+#             )
+#         except Exception as e:
+#             raise HTTPException(
+#                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#                 detail=f"Error loading BPMN spec: {str(e)}",
+#             )
+
+#         # Prepare initial data (merge dummy data with provided data)
+#         default_data = get_default_initial_data()
+#         initial_data = {**default_data, **(application.initial_data or {})}
+
+#         # Create workflow instance with subprocess specs
+#         workflow = create_workflow_instance(
+#             spec,
+#             subprocess_specs=subprocess_specs if subprocess_specs else None,
+#             data=initial_data,
+#         )
+
+#         # Create workflow instance record
+#         wf_instance = WorkflowInstance(
+#             institute_id=application.institute_id,
+#             workflow_definition_id=workflow_def.id,
+#             business_key=application.business_key,
+#             definition=workflow_def.process_id,
+#             state=dumps_wf(workflow),
+#             status="running",
+#         )
+
+#         db.add(wf_instance)
+#         db.flush()  # Flush to get the ID
+
+#         # Run the workflow
+#         try:
+#             should_persist, waiting_task_ids = run_service_tasks(
+#                 wf=workflow,
+#                 db=db,
+#                 wf_row=wf_instance,
+#                 user=current_user,
+#                 auto_persist=False,  # We'll persist manually
+#             )
+
+#             # Update workflow instance with current state
+#             wf_instance.state = dumps_wf(workflow)
+#             wf_instance.current_tasks = waiting_task_ids
+
+#             if workflow.is_completed():
+#                 wf_instance.status = "completed"
+#                 from datetime import datetime
+
+#                 wf_instance.completed_at = datetime.utcnow()
+
+#             db.commit()
+#             db.refresh(wf_instance)
+
+#         except Exception as e:
+#             # Mark workflow as failed
+#             wf_instance.status = "failed"
+#             wf_instance.error_message = str(e)
+#             wf_instance.state = dumps_wf(workflow)
+#             db.commit()
+#             raise HTTPException(
+#                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#                 detail=f"Error executing workflow: {str(e)}",
+#             )
+
+#         return wf_instance
+
+#     except HTTPException:
+#         raise
+#     except Exception as e:
+#         db.rollback()
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail=f"Error creating application: {str(e)}",
+#         )
+
+
+# @application_router.get(
+#     "/institute/{institute_id}", response_model=list[ApplicationResponse]
+# )
+# def list_applications(
+#     institute_id: UUID,
+#     skip: int = 0,
+#     limit: int = 100,
+#     status: str = None,
+#     db: Session = Depends(get_db),
+# ):
+#     """
+#     List all applications (workflow instances) for an institute.
+#     """
+#     # Verify institute exists
+#     institute = db.query(Institute).filter(Institute.id == institute_id).first()
+#     if not institute:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail=f"Institute with id {institute_id} not found",
+#         )
+
+#     query = db.query(WorkflowInstance).filter(
+#         WorkflowInstance.institute_id == institute_id
+#     )
+
+#     # Apply filters
+#     if status:
+#         query = query.filter(WorkflowInstance.status == status)
+
+#     # Order by created_at descending
+#     query = query.order_by(WorkflowInstance.created_at.desc())
+
+#     # Apply pagination
+#     applications = query.offset(skip).limit(limit).all()
+
+#     return applications
 
 
 @application_router.get("/{application_id}", response_model=ApplicationResponse)
@@ -708,7 +748,7 @@ def submit_student_application(
                     application_snapshot_id=snapshot.id,
                     institute_id=program_data.institute_id,
                     preferred_campus_id=program_data.preferred_campus_id,
-                    program_cycle_id=program_cycle.id,
+                    preferred_program_cycle_id=program_cycle.id,
                     quota_id=program_data.quota_id,
                     status=ApplicationStatus.SUBMITTED,
                     submitted_at=datetime.utcnow(),
@@ -717,16 +757,42 @@ def submit_student_application(
                 db.add(application)
                 db.flush()
                 
-                # Create status history
-                status_history = ApplicationStatusHistory(
-                    application_id=application.id,
-                    from_status=None,
-                    to_status=ApplicationStatus.SUBMITTED,
-                    notes="Application submitted by student",
-                    changed_by=user.id,
+                # Log application submitted
+                db.add(
+                    ApplicationLogHistory(
+                        application_id=application.id,
+                        action_type="status_change",
+                        details="Application submitted by student",
+                        changed_by=user.id,
+                    )
                 )
-                db.add(status_history)
-                
+
+                # Create application documents (single source for this application)
+                db.add(
+                    ApplicationDocument(
+                        application_id=application.id,
+                        document_type=DocumentType.PROFILE_PICTURE,
+                        document_name="Profile picture",
+                        file_url=request.student_profile.profile_picture_url,
+                    )
+                )
+                db.add(
+                    ApplicationDocument(
+                        application_id=application.id,
+                        document_type=DocumentType.IDENTITY_DOCUMENT,
+                        document_name="Identity document",
+                        file_url=request.student_profile.identity_doc_url,
+                    )
+                )
+                db.add(
+                    ApplicationDocument(
+                        application_id=application.id,
+                        document_type=DocumentType.ACADEMIC_RESULT_CARD,
+                        document_name=f"Result card ({request.academic_record.level.value})",
+                        file_url=request.academic_record.result_card_url,
+                    )
+                )
+
                 # ==================== WORKFLOW INTEGRATION ====================
                 # Check if there's an active workflow for this institute
                 workflow_def = db.query(WorkflowDefinition).filter(
@@ -782,27 +848,22 @@ def submit_student_application(
                         )
                         db.add(wf_instance)
                         db.flush()
-                        
+
+                        # Create step rows for progress tracking (one per subworkflow)
+                        create_workflow_instance_steps(db, wf_instance.id, subprocess_refs)
+
                         # Link workflow to application
                         application.workflow_instance_id = wf_instance.id
-                        
-                        # # Run service tasks
-                        # should_persist, waiting_task_ids = run_service_tasks(
-                        #     wf=workflow,
-                        #     db=db,
-                        #     wf_row=wf_instance,
-                        #     user=user,
-                        #     auto_persist=False,
-                        # )
-                        
-                        # # Update workflow state
-                        # wf_instance.state = dumps_wf(workflow)
-                        # wf_instance.current_tasks = waiting_task_ids
-                        
-                        # if workflow.is_completed():
-                        #     wf_instance.status = "completed"
-                        #     wf_instance.completed_at = datetime.utcnow()
-                        
+
+                        # Run service tasks until we hit a user task or completion; persist state and step current_tasks
+                        run_service_tasks_and_persist_steps(
+                            wf=workflow,
+                            db=db,
+                            wf_row=wf_instance,
+                            user=user,
+                            auto_persist=False,
+                        )
+
                     except Exception as wf_error:
                         # Log workflow error but don't fail the application
                         print(f"Warning: Workflow creation failed for application {application_number}: {str(wf_error)}")

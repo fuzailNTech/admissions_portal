@@ -231,6 +231,29 @@ def is_campus_admin(
     return current_staff
 
 
+def require_admin_staff(
+    current_staff: StaffProfile = Depends(get_current_staff),
+) -> StaffProfile:
+    """
+    Dependency to require institute admin or campus admin role.
+
+    Usage:
+        @router.get("/endpoint")
+        def endpoint(staff: StaffProfile = Depends(require_admin_staff)):
+            # staff is either INSTITUTE_ADMIN or CAMPUS_ADMIN
+            ...
+    """
+    if current_staff.role not in (
+        StaffRoleType.INSTITUTE_ADMIN,
+        StaffRoleType.CAMPUS_ADMIN,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only institute or campus admins can access this resource",
+        )
+    return current_staff
+
+
 def get_user_institute(staff: StaffProfile, db: Session) -> Optional[Institute]:
     """
     Get the institute for a staff member.

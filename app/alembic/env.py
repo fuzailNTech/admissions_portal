@@ -11,6 +11,7 @@ from app.database.models.workflow import (
     WorkflowCatalog,
     WorkflowDefinition,
     WorkflowInstance,
+    WorkflowInstanceStep,
 )
 
 from alembic import context

@@ -17,6 +17,8 @@ from app.database.models.workflow import (
     WorkflowCatalog,
     WorkflowDefinition,
     WorkflowInstance,
+    WorkflowInstanceStep,
+    WorkflowStepStatus,
 )
 from app.database.models.admission import (
     AdmissionCycle,
@@ -34,8 +36,9 @@ from app.database.models.application import (
     ApplicationDocument,
     ApplicationComment,
     StudentComment,
-    ApplicationStatusHistory,
-    ApplicationNumberSequence
+    ApplicationLogHistory,
+    ApplicationNumberSequence,
+    DocumentType,
 )
 
 __all__ = [
@@ -60,6 +63,8 @@ __all__ = [
     "WorkflowCatalog",
     "WorkflowDefinition",
     "WorkflowInstance",
+    "WorkflowInstanceStep",
+    "WorkflowStepStatus",
     "AdmissionCycle",
     "CampusAdmissionCycle",
     "ProgramAdmissionCycle",
@@ -71,8 +76,9 @@ __all__ = [
     "ApplicationGuardianSnapshot",
     "ApplicationAcademicSnapshot",
     "ApplicationDocument",
+    "DocumentType",
     "ApplicationComment",
     "StudentComment",
-    "ApplicationStatusHistory",
+    "ApplicationLogHistory",
     "ApplicationNumberSequence",
 ]

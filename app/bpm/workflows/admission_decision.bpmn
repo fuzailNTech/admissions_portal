@@ -33,28 +33,33 @@
     </bpmn:sequenceFlow>
     <bpmn:serviceTask id="admission_decision_v1.offered" name="Offered">
       <bpmn:incoming>Flow_1wklh8f</bpmn:incoming>
-      <bpmn:outgoing>Flow_0hf8b8m</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0o6rvpl</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:serviceTask id="admission_decision_v1.rejected" name="Rejected">
       <bpmn:incoming>Flow_1vd0502</bpmn:incoming>
-      <bpmn:outgoing>Flow_1hska15</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0w16sjz</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:serviceTask id="admission_decision_v1.on_hold" name="On Hold">
       <bpmn:incoming>Flow_18u0nz8</bpmn:incoming>
       <bpmn:outgoing>Flow_1gyqh8d</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:endEvent id="admission_decision_v1.end_event">
-      <bpmn:incoming>Flow_0hf8b8m</bpmn:incoming>
-      <bpmn:incoming>Flow_1hska15</bpmn:incoming>
+      <bpmn:incoming>Flow_1kbfawh</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_0hf8b8m" sourceRef="admission_decision_v1.offered" targetRef="admission_decision_v1.end_event" />
-    <bpmn:sequenceFlow id="Flow_1hska15" sourceRef="admission_decision_v1.rejected" targetRef="admission_decision_v1.end_event" />
     <bpmn:sequenceFlow id="Flow_1gyqh8d" sourceRef="admission_decision_v1.on_hold" targetRef="admission_decision_v1.resume_review" />
     <bpmn:userTask id="admission_decision_v1.resume_review" name="Resume Admission Review">
       <bpmn:incoming>Flow_1gyqh8d</bpmn:incoming>
       <bpmn:outgoing>Flow_0wic1xw</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:sequenceFlow id="Flow_0wic1xw" sourceRef="admission_decision_v1.resume_review" targetRef="admission_decision_v1.decide_admission_status" />
+    <bpmn:sequenceFlow id="Flow_0o6rvpl" sourceRef="admission_decision_v1.offered" targetRef="admission_decision_v1.post_context" />
+    <bpmn:sequenceFlow id="Flow_0w16sjz" sourceRef="admission_decision_v1.rejected" targetRef="admission_decision_v1.post_context" />
+    <bpmn:serviceTask id="admission_decision_v1.post_context" name="Post Context">
+      <bpmn:incoming>Flow_0o6rvpl</bpmn:incoming>
+      <bpmn:incoming>Flow_0w16sjz</bpmn:incoming>
+      <bpmn:outgoing>Flow_1kbfawh</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1kbfawh" sourceRef="admission_decision_v1.post_context" targetRef="admission_decision_v1.end_event" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="operation.admission_decision_v1">
@@ -90,11 +95,15 @@
         <dc:Bounds x="710" y="360" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0bg4pt5_di" bpmnElement="admission_decision_v1.end_event">
-        <dc:Bounds x="952" y="202" width="36" height="36" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_06ctjw3_di" bpmnElement="admission_decision_v1.resume_review">
         <dc:Bounds x="710" y="500" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1iy8u3q_di" bpmnElement="admission_decision_v1.post_context">
+        <dc:Bounds x="880" y="190" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0bg4pt5_di" bpmnElement="admission_decision_v1.end_event">
+        <dc:Bounds x="1052" y="212" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_1nrozka_di" bpmnElement="Flow_1nrozka">
         <di:waypoint x="215" y="177" />
@@ -122,18 +131,6 @@
         <di:waypoint x="620" y="400" />
         <di:waypoint x="710" y="400" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0hf8b8m_di" bpmnElement="Flow_0hf8b8m">
-        <di:waypoint x="810" y="177" />
-        <di:waypoint x="881" y="177" />
-        <di:waypoint x="881" y="220" />
-        <di:waypoint x="952" y="220" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1hska15_di" bpmnElement="Flow_1hska15">
-        <di:waypoint x="810" y="290" />
-        <di:waypoint x="881" y="290" />
-        <di:waypoint x="881" y="220" />
-        <di:waypoint x="952" y="220" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1gyqh8d_di" bpmnElement="Flow_1gyqh8d">
         <di:waypoint x="760" y="440" />
         <di:waypoint x="760" y="500" />
@@ -142,6 +139,22 @@
         <di:waypoint x="710" y="540" />
         <di:waypoint x="480" y="540" />
         <di:waypoint x="480" y="217" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0o6rvpl_di" bpmnElement="Flow_0o6rvpl">
+        <di:waypoint x="810" y="177" />
+        <di:waypoint x="845" y="177" />
+        <di:waypoint x="845" y="230" />
+        <di:waypoint x="880" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0w16sjz_di" bpmnElement="Flow_0w16sjz">
+        <di:waypoint x="810" y="290" />
+        <di:waypoint x="845" y="290" />
+        <di:waypoint x="845" y="230" />
+        <di:waypoint x="880" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1kbfawh_di" bpmnElement="Flow_1kbfawh">
+        <di:waypoint x="980" y="230" />
+        <di:waypoint x="1052" y="230" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

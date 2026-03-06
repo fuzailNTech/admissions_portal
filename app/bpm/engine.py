@@ -244,6 +244,26 @@ def filter_exclusive_gateway_tasks(wf: BpmnWorkflow, gateway_task, ready_tasks: 
     print(f"  Filtered gateway paths: keeping {kept_task_ids}")
 
 
+def _waiting_tasks_by_called_element(
+    wf: BpmnWorkflow,
+    waiting: List[Any],
+) -> Tuple[List[str], Dict[str, List[str]]]:
+    """
+    Build waiting_task_ids and group them by subworkflow (called_element).
+    Parent has only call activities; all waiting tasks belong to a subworkflow.
+    """
+    waiting_task_ids = [t.task_spec.bpmn_id for t in waiting]
+    by_called: Dict[str, List[str]] = {}
+    for t in waiting:
+        tid = t.task_spec.bpmn_id
+        w = getattr(t, "workflow", None)
+        if w is not None and w is not wf:
+            ce = getattr(w.spec, "name", None) or getattr(w.spec, "bpmn_id", None)
+            if ce:
+                by_called.setdefault(ce, []).append(tid)
+    return waiting_task_ids, by_called
+
+
 def get_task_type(task) -> str:
     """
     Determine task type: 'service', 'user', 'callActivity', or 'other'.
@@ -282,7 +302,7 @@ def run_service_tasks(
     wf_row: WorkflowInstance,
     user: Optional[User] = None,
     auto_persist: bool = True,
-) -> Tuple[bool, List[str]]:
+) -> Tuple[bool, List[str], Dict[str, List[str]]]:
     """
     Execute service tasks until hitting a user task or waiting event.
 
@@ -294,15 +314,17 @@ def run_service_tasks(
         auto_persist: If True, automatically persist state after each batch
 
     Returns:
-        Tuple of (should_persist, waiting_task_ids)
+        Tuple of (should_persist, waiting_task_ids, waiting_tasks_by_called_element)
         - should_persist: True if workflow hit a user task or waiting event
         - waiting_task_ids: List of task IDs that are waiting (user tasks or events)
+        - waiting_tasks_by_called_element: Map of called_element (subworkflow id) -> list of waiting task IDs in that step
     """
     # 1) Consume StartEvent and any automatic work
     wf.refresh_waiting_tasks()
 
     made_progress = True
-    waiting_task_ids = []
+    waiting_task_ids: List[str] = []
+    waiting_tasks_by_called_element: Dict[str, List[str]] = {}
 
     while made_progress:
         made_progress = False
@@ -314,22 +336,22 @@ def run_service_tasks(
             # No more READY tasks, check for waiting tasks
             wf.refresh_waiting_tasks()
             waiting = [t for t in wf.get_tasks(state=TaskState.WAITING)]
-            waiting_task_ids = [t.task_spec.bpmn_id for t in waiting]
+            waiting_task_ids, waiting_tasks_by_called_element = _waiting_tasks_by_called_element(wf, waiting)
 
             # Check if any are user tasks
             user_tasks = [t for t in waiting if get_task_type(t) == "user"]
             if user_tasks:
                 print(f"Hit user tasks: {[t.task_spec.bpmn_id for t in user_tasks]}")
-                return True, waiting_task_ids
+                return True, waiting_task_ids, waiting_tasks_by_called_element
 
             # Check if workflow is completed
             if wf.is_completed():
                 print("Workflow completed")
-                return True, []
+                return True, [], {}
 
             # Otherwise, we're waiting on events/timers
             print(f"Waiting on events/timers: {waiting_task_ids}")
-            return True, waiting_task_ids
+            return True, waiting_task_ids, waiting_tasks_by_called_element
 
         task_type = get_task_type(t)
         spec_name = t.task_spec.bpmn_id if hasattr(t.task_spec, "bpmn_id") else None
@@ -341,7 +363,14 @@ def run_service_tasks(
                 # User task - stop execution and persist
                 print(f"User task encountered: {spec_name} - stopping execution")
                 waiting_task_ids.append(spec_name)
-                return True, waiting_task_ids
+                # Group by called_element for this single waiting task (parent has no user tasks)
+                w = getattr(t, "workflow", None)
+                by_called: Dict[str, List[str]] = {}
+                if w is not None and w is not wf:
+                    ce = getattr(w.spec, "name", None) or getattr(w.spec, "bpmn_id", None)
+                    if ce:
+                        by_called[ce] = [spec_name]
+                return True, waiting_task_ids, by_called
 
             elif task_type == "callActivity":
                 # Subprocess call - let SpiffWorkflow handle it
@@ -401,7 +430,7 @@ def run_service_tasks(
             # Check if workflow completed after this task
             if wf.is_completed():
                 print(f"Workflow completed after task: {spec_name}")
-                return True, []
+                return True, [], {}
 
             # 3) Promote graph after each completion
             wf.refresh_waiting_tasks()
@@ -415,7 +444,7 @@ def run_service_tasks(
 
     # Check final state
     waiting = [t for t in wf.get_tasks(state=TaskState.WAITING)]
-    waiting_task_ids = [t.task_spec.bpmn_id for t in waiting]
+    waiting_task_ids, waiting_tasks_by_called_element = _waiting_tasks_by_called_element(wf, waiting)
 
     # Show current state
     print("waiting tasks:", [f"{t.task_spec.bpmn_id}({t.state})" for t in waiting])
@@ -430,7 +459,7 @@ def run_service_tasks(
         db.add(wf_row)
         db.flush()
 
-    return should_persist, waiting_task_ids
+    return should_persist, waiting_task_ids, waiting_tasks_by_called_element
 
 
 def persist_workflow_state(
@@ -463,7 +492,7 @@ def resume_workflow(
         task_data: Optional data to inject when completing task
 
     Returns:
-        Tuple of (should_persist, waiting_task_ids)
+        Tuple of (should_persist, waiting_task_ids, waiting_tasks_by_called_element)
     """
     # Load workflow from DB
     wf = loads_wf(wf_row.state)
