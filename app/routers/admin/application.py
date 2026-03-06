@@ -25,6 +25,7 @@ from app.database.models.application import (
     ApplicationComment,
     ApplicationDocument,
     ApplicationLogHistory,
+    ApplicationSnapshot,
     ApplicationStatus,
     DocumentType,
     StudentComment,
@@ -115,7 +116,7 @@ def list_applications(
         .options(
             joinedload(Application.snapshot),
             joinedload(Application.preferred_campus),
-            joinedload(Application.preferred_program_cycle).joinedload("program"),
+            joinedload(Application.preferred_program_cycle).joinedload(ProgramAdmissionCycle.program),
             joinedload(Application.quota),
             joinedload(Application.assigned_staff),
         )
@@ -208,10 +209,10 @@ def get_application(
     app = (
         db.query(Application)
         .options(
-            joinedload(Application.snapshot).joinedload("guardians"),
-            joinedload(Application.snapshot).joinedload("academic_records"),
+            joinedload(Application.snapshot).joinedload(ApplicationSnapshot.guardians),
+            joinedload(Application.snapshot).joinedload(ApplicationSnapshot.academic_records),
             joinedload(Application.preferred_campus),
-            joinedload(Application.preferred_program_cycle).joinedload("program"),
+            joinedload(Application.preferred_program_cycle).joinedload(ProgramAdmissionCycle.program),
             joinedload(Application.quota),
             joinedload(Application.assigned_staff),
         )
