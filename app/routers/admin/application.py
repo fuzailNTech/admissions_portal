@@ -48,6 +48,7 @@ from app.schema.admin.application import (
     DocumentVerificationUpdate,
     WorkflowStepItem,
 )
+from app.bpm.user_task_handlers.config import run_user_task_handler
 from app.utils.auth import require_admin_staff, get_accessible_campuses
 from app.utils.engine import complete_user_task_and_persist
 
@@ -80,7 +81,7 @@ def list_applications(
     preferred_campus_id: Optional[UUID] = Query(None, description="Filter by preferred campus"),
     program_id: Optional[UUID] = Query(None, description="Filter by program"),
     quota: Optional[QuotaType] = Query(None, description="Filter by quota type (e.g. open_merit, hafiz_e_quran)"),
-    status_filter: Optional[str] = Query(None, alias="status", description="Filter by application status"),
+    status_filter: Optional[ApplicationStatus] = Query(None, alias="status", description="Filter by application status"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
 ):
@@ -145,14 +146,7 @@ def list_applications(
     if quota is not None:
         query = query.join(Application.quota).filter(ProgramQuota.quota_type == quota)
     if status_filter is not None:
-        try:
-            status_enum = ApplicationStatus(status_filter)
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid status. Must be one of: {[s.value for s in ApplicationStatus]}",
-            )
-        query = query.filter(Application.status == status_enum)
+        query = query.filter(Application.status == status_filter)
 
     query = query.order_by(Application.submitted_at.desc())
     total = query.count()
@@ -642,11 +636,18 @@ def complete_application_task(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"task_id must be one of the current waiting tasks: {allowed_task_ids}",
         )
+    task_data = run_user_task_handler(
+        body.task_id,
+        app.id,
+        body.data,
+        db,
+        current_staff,
+    )
     task_found, _, _, _ = complete_user_task_and_persist(
         app.workflow_instance,
         db,
         body.task_id,
-        body.data,
+        task_data,
         current_staff,
     )
     if not task_found:

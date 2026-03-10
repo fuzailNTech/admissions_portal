@@ -5,7 +5,7 @@ from uuid import UUID
 
 
 # Import enums from models
-from app.database.models.institute import CampusType, InstituteType, InstituteStatus, InstituteLevel, ShiftType
+from app.database.models.institute import CampusType, InstituteType, InstituteStatus, InstituteLevel, ShiftType, AssignmentMode
 
 
 # Institute Schemas
@@ -17,6 +17,7 @@ class InstituteResponse(BaseModel):
     institute_type: InstituteType
     institute_level: InstituteLevel
     status: InstituteStatus
+    application_assignment_mode: AssignmentMode
     registration_number: Optional[str]
     regulatory_body: Optional[str]
     established_year: Optional[int]
@@ -26,9 +27,14 @@ class InstituteResponse(BaseModel):
     custom_metadata: Dict[str, Any]
     created_at: datetime
     updated_at: Optional[datetime]
-    
+
     class Config:
         from_attributes = True
+
+
+class InstituteUpdate(BaseModel):
+    """Schema for updating institute (admin: own institute only)."""
+    application_assignment_mode: Optional[AssignmentMode] = None
 
 
 # Campus Schemas

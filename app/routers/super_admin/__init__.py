@@ -15,6 +15,6 @@ super_admin_router.include_router(institute_router)
 super_admin_router.include_router(users_router)
 # super_admin_router.include_router(dummy_router)
 super_admin_router.include_router(seed_router)
-# super_admin_router.include_router(workflow_catalog_router)
+super_admin_router.include_router(workflow_catalog_router)
 
 __all__ = ["super_admin_router"]

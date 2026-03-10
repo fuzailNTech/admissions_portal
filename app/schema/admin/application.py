@@ -101,7 +101,7 @@ class ApplicationDetailResponse(BaseModel):
     id: UUID
     application_number: str
     institute_id: UUID
-    status: ApplicationStatus
+    status: ApplicationStatus = Field(..., description="Application status (e.g. submitted, verified, offered, rejected, on_hold)")
     submitted_at: datetime
     last_updated_at: Optional[datetime] = None
     decision_notes: Optional[str] = None
