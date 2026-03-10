@@ -21,6 +21,7 @@ class ApplicationStatus(str, Enum):
     VERIFIED = "verified"
     OFFERED = "offered"
     REJECTED = "rejected"
+    ON_HOLD = "on_hold"
     ACCEPTED = "accepted"
     WITHDRAWN = "withdrawn"
 

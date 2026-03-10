@@ -58,9 +58,10 @@ def complete_user_task_and_persist(
         (task_found_and_completed, should_persist, waiting_task_ids, waiting_tasks_by_called_element)
     """
     wf = loads_wf(wf_row.state)
+    waiting = list(wf.get_tasks(state=TaskState.WAITING))
+    ready = list(wf.get_tasks(state=TaskState.READY))
     task_found = False
-    waiting = wf.get_tasks(state=TaskState.WAITING)
-    for t in waiting:
+    for t in waiting + ready:
         tid = getattr(t.task_spec, "bpmn_id", None) or getattr(t.task_spec, "name", None)
         if tid == task_id:
             if task_data:

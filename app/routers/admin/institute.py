@@ -9,6 +9,7 @@ from app.database.models.auth import StaffProfile
 from app.schema.admin.institute import (
     # Institute
     InstituteResponse,
+    InstituteUpdate,
     # Campus
     CampusCreate,
     CampusUpdate,
@@ -57,6 +58,30 @@ def get_my_institute(
             detail="Institute not found",
         )
 
+    return institute
+
+
+@institute_router.patch("", response_model=InstituteResponse)
+def update_my_institute(
+    institute_update: InstituteUpdate,
+    staff: StaffProfile = Depends(is_institute_admin),
+    db: Session = Depends(get_db),
+):
+    """
+    Update the current staff's institute (e.g. application_assignment_mode).
+    Only institute admins can update institute settings.
+    """
+    institute = db.query(Institute).filter(Institute.id == staff.institute_id).first()
+    if not institute:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Institute not found",
+        )
+    update_data = institute_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(institute, field, value)
+    db.commit()
+    db.refresh(institute)
     return institute
 
 

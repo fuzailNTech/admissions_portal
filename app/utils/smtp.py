@@ -1,6 +1,7 @@
 """
 SMTP email utility using fastapi-mail.
 """
+import asyncio
 from typing import List, Union
 
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
@@ -48,6 +49,17 @@ async def send_mail(
         subtype=subtype,
     )
     fm = FastMail(config)
-    print(f"Sending email to {recipients} with subject {subject} and body {body}")
     await fm.send_message(message)
-    print(f"Email sent to {recipients} with subject {subject} and body {body}")
+
+
+def send_mail_sync(
+    recipients: Union[List[str], str],
+    subject: str,
+    body: str,
+    *,
+    subtype: MessageType = MessageType.html,
+) -> None:
+    """
+    Synchronous wrapper for send_mail. Use from sync code (e.g. workflow handlers).
+    """
+    asyncio.run(send_mail(recipients=recipients, subject=subject, body=body, subtype=subtype))

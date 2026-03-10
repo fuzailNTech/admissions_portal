@@ -30,6 +30,12 @@ class InstituteLevel(str, enum.Enum):
     SCHOOL = "school"
 
 
+class AssignmentMode(str, enum.Enum):
+    """How applications are assigned to staff: auto or manual."""
+    AUTO = "auto"
+    MANUAL = "manual"
+
+
 class CampusType(str, enum.Enum):
     """Type of campus by gender"""
     BOYS = "boys"
@@ -63,6 +69,12 @@ class Institute(Base):
     institute_type = Column(SQLEnum(InstituteType, values_callable=lambda x: [e.value for e in x]), nullable=False, index=True)
     institute_level = Column(SQLEnum(InstituteLevel, values_callable=lambda x: [e.value for e in x]), nullable=False)
     status = Column(SQLEnum(InstituteStatus, values_callable=lambda x: [e.value for e in x]), default=InstituteStatus.ACTIVE, nullable=False, index=True)
+    application_assignment_mode = Column(
+        SQLEnum(AssignmentMode, values_callable=lambda x: [e.value for e in x]),
+        default=AssignmentMode.AUTO,
+        nullable=False,
+        index=True,
+    )
     
     # Official Information
     registration_number = Column(String, nullable=True)  # HEC/Government registration

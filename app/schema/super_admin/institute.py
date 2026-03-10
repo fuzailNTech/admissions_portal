@@ -5,7 +5,7 @@ from uuid import UUID
 import re
 
 # Import enums from models
-from app.database.models.institute import InstituteType, InstituteStatus, InstituteLevel
+from app.database.models.institute import InstituteType, InstituteStatus, InstituteLevel, AssignmentMode
 from app.database.models.auth import StaffRoleType
 
 # Avoid circular import: use TYPE_CHECKING or import response schema from workflow_definition
@@ -19,7 +19,8 @@ class InstituteCreate(BaseModel):
     institute_type: InstituteType
     institute_level: InstituteLevel
     status: InstituteStatus = InstituteStatus.ACTIVE
-    
+    application_assignment_mode: AssignmentMode = AssignmentMode.AUTO
+
     # Optional fields
     registration_number: Optional[str] = None
     regulatory_body: Optional[str] = Field(None, description="e.g., BISE Lahore, HEC, PEC, PMDC")
@@ -45,6 +46,7 @@ class InstituteUpdate(BaseModel):
     institute_type: Optional[InstituteType] = None
     institute_level: Optional[InstituteLevel] = None
     status: Optional[InstituteStatus] = None
+    application_assignment_mode: Optional[AssignmentMode] = None
     registration_number: Optional[str] = None
     regulatory_body: Optional[str] = None
     established_year: Optional[int] = Field(None, ge=1800, le=2100)
@@ -70,6 +72,7 @@ class InstituteResponse(BaseModel):
     institute_type: InstituteType
     institute_level: InstituteLevel
     status: InstituteStatus
+    application_assignment_mode: AssignmentMode
     registration_number: Optional[str]
     regulatory_body: Optional[str]
     established_year: Optional[int]
