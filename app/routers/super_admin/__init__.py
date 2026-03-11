@@ -13,7 +13,7 @@ super_admin_router = APIRouter(prefix="/super-admin")
 super_admin_router.include_router(super_admin_auth_router)
 super_admin_router.include_router(institute_router)
 super_admin_router.include_router(users_router)
-# super_admin_router.include_router(dummy_router)
+super_admin_router.include_router(dummy_router)
 super_admin_router.include_router(seed_router)
 super_admin_router.include_router(workflow_catalog_router)
 
