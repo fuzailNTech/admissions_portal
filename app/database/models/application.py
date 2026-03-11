@@ -41,6 +41,16 @@ class DocumentType(str, Enum):
     OTHER = "other"
 
 
+class ApplicationLogActionType:
+    """Consistent action_type values for ApplicationLogHistory. Use these everywhere."""
+    STATUS_CHANGE = "status_change"
+    APPLICATION_ASSIGNED = "application_assigned"
+    DOCUMENT_REQUEST_CREATED = "document_request_created"
+    DOCUMENT_VERIFICATION_UPDATED = "document_verification_updated"
+    DOCUMENT_UPLOADED = "document_uploaded"
+    COMMENT_ADDED = "comment_added"
+
+
 # ==================== MODELS ====================
 
 class Application(Base):
@@ -566,6 +576,7 @@ class ApplicationLogHistory(Base):
     # ==================== ACTION ====================
     action_type = Column(String(64), nullable=False, index=True)  # e.g. "status_change", "document_verified", "assigned"
     details = Column(Text, nullable=True)  # Free-form description of the action
+    metadata_ = Column("metadata", JSONB, nullable=True)  # Structured data e.g. {"from_status": "submitted", "to_status": "under_review"}
 
     # ==================== CHANGED BY ====================
     changed_by = Column(

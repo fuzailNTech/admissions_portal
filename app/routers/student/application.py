@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
-from sqlalchemy.orm import Session
-from typing import Dict, Tuple, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Query
+from sqlalchemy.orm import Session, joinedload
+from typing import Dict, List, Tuple, Optional
 from uuid import UUID
 
 from app.database.config.db import get_db
@@ -25,7 +25,10 @@ from app.database.models.application import (
     ApplicationAcademicSnapshot,
     ApplicationDocument,
     ApplicationLogHistory,
+    ApplicationLogActionType,
     ApplicationStatus,
+    ApplicationComment,
+    StudentComment,
     VerificationStatus,
     DocumentType,
 )
@@ -41,11 +44,25 @@ from app.schema.student.application import (
     ApplicationResponse,
     ApplicationSubmitRequest,
     ApplicationSubmitResponse,
+    StudentApplicationStatus,
+    StudentApplicationListItem,
+    StudentApplicationListResponse,
+    StudentApplicationDetailResponse,
+    ApplicationTrackStep,
+    ApplicationTrackResponse,
+    StudentGuardianDetail,
+    StudentAcademicRecordDetail,
+    DocumentRequestItem,
+    DocumentRequestListResponse,
+    DocumentRequestUploadRequest,
+    StudentCommentCreate,
+    StudentCommentItem,
+    ApplicationCommentItem,
 )
-from app.utils.auth import get_current_active_user, get_password_hash, generate_strong_password
+from app.utils.auth import get_current_active_user, get_current_student, get_password_hash, generate_strong_password
 from app.utils.admission import generate_application_number
 from app.utils.smtp import send_mail
-from datetime import datetime
+from datetime import datetime, timezone
 from app.bpm.engine import (
     load_spec_from_xml,
     create_workflow_instance,
@@ -57,6 +74,101 @@ application_router = APIRouter(
     prefix="/application",
     tags=["Student - Application Management"],
 )
+
+
+def _student_status(internal_status: ApplicationStatus) -> StudentApplicationStatus:
+    """
+    Map internal application status to student-facing status.
+    Only mapping: on_hold -> under_review. All other statuses pass through as-is.
+    """
+    if internal_status == ApplicationStatus.ON_HOLD:
+        return StudentApplicationStatus.UNDER_REVIEW
+    if internal_status == ApplicationStatus.SUBMITTED:
+        return StudentApplicationStatus.SUBMITTED
+    if internal_status == ApplicationStatus.UNDER_REVIEW:
+        return StudentApplicationStatus.UNDER_REVIEW
+    if internal_status == ApplicationStatus.DOCUMENTS_PENDING:
+        return StudentApplicationStatus.DOCUMENTS_PENDING
+    if internal_status == ApplicationStatus.VERIFIED:
+        return StudentApplicationStatus.VERIFIED
+    if internal_status == ApplicationStatus.OFFERED:
+        return StudentApplicationStatus.OFFERED
+    if internal_status == ApplicationStatus.REJECTED:
+        return StudentApplicationStatus.REJECTED
+    if internal_status == ApplicationStatus.ACCEPTED:
+        return StudentApplicationStatus.ACCEPTED
+    if internal_status == ApplicationStatus.WITHDRAWN:
+        return StudentApplicationStatus.WITHDRAWN
+    return StudentApplicationStatus.SUBMITTED
+
+
+def _student_status_from_string(internal_status_str: str) -> StudentApplicationStatus:
+    """Map internal status string (e.g. from log metadata) to student-facing status. Delegates to _student_status."""
+    if not internal_status_str or not internal_status_str.strip():
+        return StudentApplicationStatus.SUBMITTED
+    try:
+        return _student_status(ApplicationStatus(internal_status_str.strip().lower()))
+    except (ValueError, AttributeError):
+        return StudentApplicationStatus.SUBMITTED
+
+
+def _internal_statuses_for_student_status(student_status: StudentApplicationStatus) -> List[ApplicationStatus]:
+    """Internal status(es) that map to this student status. Only under_review -> on_hold; rest are 1:1."""
+    if student_status == StudentApplicationStatus.UNDER_REVIEW:
+        return [ApplicationStatus.ON_HOLD]
+    if student_status == StudentApplicationStatus.SUBMITTED:
+        return [ApplicationStatus.SUBMITTED]
+    if student_status == StudentApplicationStatus.DOCUMENTS_PENDING:
+        return [ApplicationStatus.DOCUMENTS_PENDING]
+    if student_status == StudentApplicationStatus.VERIFIED:
+        return [ApplicationStatus.VERIFIED]
+    if student_status == StudentApplicationStatus.OFFERED:
+        return [ApplicationStatus.OFFERED]
+    if student_status == StudentApplicationStatus.REJECTED:
+        return [ApplicationStatus.REJECTED]
+    if student_status == StudentApplicationStatus.ACCEPTED:
+        return [ApplicationStatus.ACCEPTED]
+    if student_status == StudentApplicationStatus.WITHDRAWN:
+        return [ApplicationStatus.WITHDRAWN]
+    return []
+
+
+def _build_application_comments(app: Application) -> List[ApplicationCommentItem]:
+    """
+    Build merged list of staff (non-internal) and student comments for an application, sorted by created_at.
+    Expects app to have staff_comments and student_comments loaded with .author.
+    """
+    out: List[ApplicationCommentItem] = []
+    for c in app.staff_comments or []:
+        if c.is_internal:
+            continue
+        name = None
+        if c.author:
+            name = f"{c.author.first_name or ''} {c.author.last_name or ''}".strip() or None
+        out.append(
+            ApplicationCommentItem(
+                id=c.id,
+                comment_text=c.comment_text,
+                created_at=c.created_at,
+                author_type="staff",
+                author_display_name=name,
+            )
+        )
+    for c in app.student_comments or []:
+        name = None
+        if c.author:
+            name = f"{c.author.first_name or ''} {c.author.last_name or ''}".strip() or c.author.email
+        out.append(
+            ApplicationCommentItem(
+                id=c.id,
+                comment_text=c.comment_text,
+                created_at=c.created_at,
+                author_type="student",
+                author_display_name=name,
+            )
+        )
+    out.sort(key=lambda x: x.created_at)
+    return out
 
 
 def build_subprocess_registry(
@@ -142,25 +254,528 @@ def create_workflow_instance_steps(
 
 
 
-@application_router.get("/{application_id}", response_model=ApplicationResponse)
-def get_application(
-    application_id: UUID,
+@application_router.get(
+    "",
+    response_model=StudentApplicationListResponse,
+    summary="List my applications",
+)
+def list_my_applications(
+    student: StudentProfile = Depends(get_current_student),
+    db: Session = Depends(get_db),
+    status: Optional[StudentApplicationStatus] = Query(None, description="Filter by student-facing status"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+):
+    """
+    List the current student's applications (overview only).
+    Returns application number, status, submitted date, documents (url + status), and target program/campus/institute names.
+    Includes total and per-status counts (student-facing status).
+    Optionally filter by status (submitted, under_review, documents_pending, verified, offered, rejected, accepted, withdrawn).
+    """
+    # Per-status counts across all applications (no pagination, unfiltered)
+    all_apps_for_counts = (
+        db.query(Application.status)
+        .filter(Application.student_profile_id == student.id)
+        .all()
+    )
+    submitted = under_review = documents_pending = verified = offered = rejected = accepted = withdrawn = 0
+    for (internal_status,) in all_apps_for_counts:
+        student_status = _student_status(internal_status)
+        if student_status == StudentApplicationStatus.SUBMITTED:
+            submitted += 1
+        elif student_status == StudentApplicationStatus.UNDER_REVIEW:
+            under_review += 1
+        elif student_status == StudentApplicationStatus.DOCUMENTS_PENDING:
+            documents_pending += 1
+        elif student_status == StudentApplicationStatus.VERIFIED:
+            verified += 1
+        elif student_status == StudentApplicationStatus.OFFERED:
+            offered += 1
+        elif student_status == StudentApplicationStatus.REJECTED:
+            rejected += 1
+        elif student_status == StudentApplicationStatus.ACCEPTED:
+            accepted += 1
+        elif student_status == StudentApplicationStatus.WITHDRAWN:
+            withdrawn += 1
+
+    query = (
+        db.query(Application)
+        .options(
+            joinedload(Application.snapshot),
+            joinedload(Application.institute),
+            joinedload(Application.preferred_campus),
+            joinedload(Application.preferred_program_cycle).joinedload(ProgramAdmissionCycle.program),
+            joinedload(Application.quota),
+            joinedload(Application.documents),
+            joinedload(Application.staff_comments).joinedload(ApplicationComment.author),
+            joinedload(Application.student_comments).joinedload(StudentComment.author),
+        )
+        .filter(Application.student_profile_id == student.id)
+    )
+    if status is not None:
+        internal_statuses = _internal_statuses_for_student_status(status)
+        query = query.filter(Application.status.in_(internal_statuses))
+    query = query.order_by(Application.submitted_at.desc())
+    total = query.count()
+    applications = query.offset(skip).limit(limit).all()
+
+    def _doc_to_request_item(d) -> DocumentRequestItem:
+        return DocumentRequestItem(
+            id=d.id,
+            document_type=d.document_type.value,
+            document_name=d.document_name,
+            description=d.description,
+            requested_at=d.requested_at,
+            verification_status=d.verification_status,
+            uploaded_at=d.uploaded_at,
+            file_url=d.file_url,
+        )
+
+    items = []
+    for app in applications:
+        program_name = None
+        if app.preferred_program_cycle and app.preferred_program_cycle.program:
+            program_name = app.preferred_program_cycle.program.name
+        all_docs = app.documents or []
+        uploaded_documents = [_doc_to_request_item(d) for d in all_docs if d.requested_by is None]
+        requested_uploads = [_doc_to_request_item(d) for d in all_docs if d.requested_by is not None and not d.file_url]
+        items.append(
+            StudentApplicationListItem(
+                id=app.id,
+                application_number=app.application_number,
+                status=_student_status(app.status),
+                submitted_at=app.submitted_at,
+                institute_name=app.institute.name if app.institute else None,
+                program_name=program_name,
+                campus_name=app.preferred_campus.name if app.preferred_campus else None,
+                quota_name=app.quota.quota_name if app.quota else None,
+                uploaded_documents=uploaded_documents,
+                requested_uploads=requested_uploads,
+                comments=_build_application_comments(app),
+            )
+        )
+    return StudentApplicationListResponse(
+        items=items,
+        total=total,
+        submitted=submitted,
+        under_review=under_review,
+        documents_pending=documents_pending,
+        verified=verified,
+        offered=offered,
+        rejected=rejected,
+        accepted=accepted,
+        withdrawn=withdrawn,
+    )
+
+
+def _build_track_response(app: Application, log_entries: list) -> ApplicationTrackResponse:
+    """Build ApplicationTrackResponse for one application from its status_change log entries."""
+    steps: List[ApplicationTrackStep] = []
+    for entry in log_entries:
+        meta = entry.metadata_ or {}
+        to_status_str = meta.get("to_status")
+        student_status = _student_status_from_string(to_status_str) if to_status_str else StudentApplicationStatus.SUBMITTED
+        steps.append(
+            ApplicationTrackStep(
+                status=student_status,
+                created_at=entry.created_at,
+            )
+        )
+    return ApplicationTrackResponse(
+        application_number=app.application_number,
+        current_status=_student_status(app.status),
+        steps=steps,
+    )
+
+
+@application_router.get(
+    "/track",
+    response_model=List[ApplicationTrackResponse],
+    summary="Track all my applications",
+)
+def track_my_applications(
+    student: StudentProfile = Depends(get_current_student),
     db: Session = Depends(get_db),
 ):
     """
-    Get a specific application (workflow instance) by ID.
+    Return tracking for all of the current student's applications.
+    Each item has application_number, current_status, and chronological steps from status_change log entries.
+    No pagination; returns a plain list.
     """
-    application = (
-        db.query(WorkflowInstance).filter(WorkflowInstance.id == application_id).first()
+    applications = (
+        db.query(Application)
+        .filter(Application.student_profile_id == student.id)
+        .order_by(Application.submitted_at.desc())
+        .all()
     )
 
-    if not application:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Application with id {application_id} not found",
-        )
+    if not applications:
+        return []
 
-    return application
+    app_ids = [app.id for app in applications]
+    log_entries_all = (
+        db.query(ApplicationLogHistory)
+        .filter(
+            ApplicationLogHistory.application_id.in_(app_ids),
+            ApplicationLogHistory.action_type == ApplicationLogActionType.STATUS_CHANGE,
+        )
+        .order_by(ApplicationLogHistory.created_at.asc())
+        .all()
+    )
+
+    log_by_app: Dict[UUID, List] = {app_id: [] for app_id in app_ids}
+    for entry in log_entries_all:
+        log_by_app[entry.application_id].append(entry)
+
+    return [
+        _build_track_response(app, log_by_app.get(app.id, []))
+        for app in applications
+    ]
+
+
+@application_router.get(
+    "/{application_id}",
+    response_model=StudentApplicationDetailResponse,
+    summary="Get my application by ID",
+)
+def get_my_application(
+    application_id: UUID,
+    student: StudentProfile = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    """
+    Get full details of one application belonging to the current student.
+    Includes snapshot data (applicant, guardians, academic records) and documents.
+    No administrative details (assigned staff, decision notes, workflow internals) are included.
+    """
+    app = (
+        db.query(Application)
+        .options(
+            joinedload(Application.snapshot).joinedload(ApplicationSnapshot.guardians),
+            joinedload(Application.snapshot).joinedload(ApplicationSnapshot.academic_records),
+            joinedload(Application.institute),
+            joinedload(Application.preferred_campus),
+            joinedload(Application.preferred_program_cycle).joinedload(ProgramAdmissionCycle.program),
+            joinedload(Application.quota),
+            joinedload(Application.documents),
+            joinedload(Application.staff_comments).joinedload(ApplicationComment.author),
+            joinedload(Application.student_comments).joinedload(StudentComment.author),
+        )
+        .filter(Application.id == application_id)
+        .first()
+    )
+    if not app:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+    if app.student_profile_id != student.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+
+    snap = app.snapshot
+    guardians = [
+        StudentGuardianDetail(
+            id=g.id,
+            guardian_relationship=g.guardian_relationship,
+            first_name=g.first_name,
+            last_name=g.last_name,
+            phone_number=g.phone_number,
+            email=g.email,
+            occupation=g.occupation,
+        )
+        for g in (snap.guardians or [])
+    ]
+    academic_records = [
+        StudentAcademicRecordDetail(
+            id=a.id,
+            level=a.level,
+            education_group=a.education_group,
+            institute_name=a.institute_name,
+            board_name=a.board_name,
+            roll_number=a.roll_number,
+            year_of_passing=a.year_of_passing,
+            total_marks=a.total_marks,
+            obtained_marks=a.obtained_marks,
+            grade=a.grade,
+        )
+        for a in (snap.academic_records or [])
+    ]
+    all_docs = app.documents or []
+    uploaded_documents = [
+        DocumentRequestItem(
+            id=d.id,
+            document_type=d.document_type.value,
+            document_name=d.document_name,
+            description=d.description,
+            requested_at=d.requested_at,
+            verification_status=d.verification_status,
+            uploaded_at=d.uploaded_at,
+            file_url=d.file_url,
+        )
+        for d in all_docs if d.requested_by is None
+    ]
+    requested_uploads = [
+        DocumentRequestItem(
+            id=d.id,
+            document_type=d.document_type.value,
+            document_name=d.document_name,
+            description=d.description,
+            requested_at=d.requested_at,
+            verification_status=d.verification_status,
+            uploaded_at=d.uploaded_at,
+            file_url=d.file_url,
+        )
+        for d in all_docs if d.requested_by is not None and not d.file_url
+    ]
+    program_name = None
+    if app.preferred_program_cycle and app.preferred_program_cycle.program:
+        program_name = app.preferred_program_cycle.program.name
+
+    return StudentApplicationDetailResponse(
+        id=app.id,
+        application_number=app.application_number,
+        status=_student_status(app.status),
+        submitted_at=app.submitted_at,
+        offer_expires_at=app.offer_expires_at,
+        institute_id=app.institute_id,
+        institute_name=app.institute.name if app.institute else None,
+        program_name=program_name,
+        campus_name=app.preferred_campus.name if app.preferred_campus else None,
+        quota_name=app.quota.quota_name if app.quota else None,
+        profile_captured_at=snap.snapshot_created_at,
+        first_name=snap.first_name,
+        last_name=snap.last_name,
+        father_name=snap.father_name,
+        gender=snap.gender,
+        date_of_birth=snap.date_of_birth,
+        identity_doc_type=snap.identity_doc_type,
+        identity_doc_number=snap.identity_doc_number,
+        religion=snap.religion,
+        nationality=snap.nationality,
+        is_disabled=snap.is_disabled,
+        disability_details=snap.disability_details,
+        primary_email=snap.primary_email,
+        primary_phone=snap.primary_phone,
+        alternate_phone=snap.alternate_phone,
+        street_address=snap.street_address,
+        city=snap.city,
+        district=snap.district,
+        province=snap.province,
+        postal_code=snap.postal_code,
+        domicile_province=snap.domicile_province,
+        domicile_district=snap.domicile_district,
+        guardians=guardians,
+        academic_records=academic_records,
+        uploaded_documents=uploaded_documents,
+        requested_uploads=requested_uploads,
+        comments=_build_application_comments(app),
+    )
+
+
+# @application_router.get(
+#     "/{application_id}/comments",
+#     response_model=List[ApplicationCommentItem],
+#     summary="List application comments (student)",
+# )
+# def list_application_comments_student(
+#     application_id: UUID,
+#     student: StudentProfile = Depends(get_current_student),
+#     db: Session = Depends(get_db),
+# ):
+#     """
+#     Fetch all comments for an application (staff non-internal + student), merged and sorted by created_at.
+#     Same pattern as admin; students only see non-internal staff comments.
+#     """
+#     app = (
+#         db.query(Application)
+#         .options(
+#             joinedload(Application.staff_comments).joinedload(ApplicationComment.author),
+#             joinedload(Application.student_comments).joinedload(StudentComment.author),
+#         )
+#         .filter(Application.id == application_id)
+#         .first()
+#     )
+#     if not app:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+#     if app.student_profile_id != student.id:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+
+#     return _build_application_comments(app)
+
+
+def _get_application_for_student(
+    application_id: UUID, student: StudentProfile, db: Session
+) -> Application:
+    """Return application if it exists and belongs to student; else raise 404."""
+    app = (
+        db.query(Application)
+        .filter(Application.id == application_id, Application.student_profile_id == student.id)
+        .first()
+    )
+    if not app:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+    return app
+
+
+# @application_router.get(
+#     "/{application_id}/document-requests",
+#     response_model=DocumentRequestListResponse,
+#     summary="List pending document requests",
+# )
+# def list_document_requests(
+#     application_id: UUID,
+#     student: StudentProfile = Depends(get_current_student),
+#     db: Session = Depends(get_db),
+# ):
+#     """
+#     List document requests for this application that are pending (requested by staff, verification_status = pending).
+#     Student can resolve these by uploading a document via PATCH .../documents/{document_id}.
+#     """
+#     _get_application_for_student(application_id, student, db)
+#     documents = (
+#         db.query(ApplicationDocument)
+#         .filter(
+#             ApplicationDocument.application_id == application_id,
+#             ApplicationDocument.requested_by.isnot(None),
+#             ApplicationDocument.verification_status == VerificationStatus.PENDING,
+#         )
+#         .order_by(ApplicationDocument.requested_at.asc())
+#         .all()
+#     )
+#     items = [
+#         DocumentRequestItem(
+#             id=d.id,
+#             document_type=d.document_type.value,
+#             document_name=d.document_name,
+#             description=d.description,
+#             requested_at=d.requested_at,
+#             verification_status=d.verification_status,
+#             uploaded_at=d.uploaded_at,
+#             file_url=d.file_url,
+#         )
+#         for d in documents
+#     ]
+#     return DocumentRequestListResponse(items=items)
+
+
+@application_router.patch(
+    "/{application_id}/documents/{document_id}",
+    response_model=DocumentRequestItem,
+    summary="Resolve document request by uploading",
+)
+def upload_document_request(
+    application_id: UUID,
+    document_id: UUID,
+    body: DocumentRequestUploadRequest,
+    student: StudentProfile = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    """
+    Resolve a document request by providing the document URL (upload).
+    Only allowed for documents that were requested by staff (requested_by is set).
+    For now the client passes the file URL; S3 upload flow can be added later.
+    """
+    _get_application_for_student(application_id, student, db)
+    doc = (
+        db.query(ApplicationDocument)
+        .filter(
+            ApplicationDocument.id == document_id,
+            ApplicationDocument.application_id == application_id,
+            ApplicationDocument.requested_by.isnot(None),
+        )
+        .first()
+    )
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document request not found")
+
+    doc.file_url = body.file_url.strip()
+    doc.uploaded_at = datetime.now(timezone.utc)
+    doc.uploaded_by = student.user_id
+    doc.verification_status = VerificationStatus.PENDING
+    db.add(doc)
+    db.add(
+        ApplicationLogHistory(
+            application_id=application_id,
+            action_type=ApplicationLogActionType.DOCUMENT_UPLOADED,
+            details=f"Document '{doc.document_name}' uploaded by student",
+            changed_by=student.user_id,
+        )
+    )
+    # If no document request has file_url null, set application status back to submitted
+    open_request_count = (
+        db.query(ApplicationDocument)
+        .filter(
+            ApplicationDocument.application_id == application_id,
+            ApplicationDocument.requested_by.isnot(None),
+            ApplicationDocument.file_url.is_(None),
+        )
+        .count()
+    )
+    if open_request_count == 0:
+        app = db.query(Application).filter(Application.id == application_id).first()
+        if app:
+            old_status = app.status
+            from_status = getattr(old_status, "value", str(old_status))
+            app.status = ApplicationStatus.SUBMITTED
+            db.add(
+                ApplicationLogHistory(
+                    application_id=application_id,
+                    action_type=ApplicationLogActionType.STATUS_CHANGE,
+                    details="Status changed to submitted (all document requests fulfilled)",
+                    metadata_={"from_status": from_status, "to_status": ApplicationStatus.SUBMITTED.value},
+                    changed_by=None
+                )
+            )
+            db.add(app)
+    db.commit()
+    db.refresh(doc)
+
+    return DocumentRequestItem(
+        id=doc.id,
+        document_type=doc.document_type.value,
+        document_name=doc.document_name,
+        description=doc.description,
+        requested_at=doc.requested_at,
+        verification_status=doc.verification_status,
+        uploaded_at=doc.uploaded_at,
+        file_url=doc.file_url,
+    )
+
+
+@application_router.post(
+    "/{application_id}/comments",
+    response_model=StudentCommentItem,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add comment on application (student)",
+)
+def create_application_comment_student(
+    application_id: UUID,
+    body: StudentCommentCreate,
+    student: StudentProfile = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    """
+    Add a comment on one of your applications. Only the owning student can comment.
+    """
+    app = _get_application_for_student(application_id, student, db)
+    comment = StudentComment(
+        application_id=app.id,
+        comment_text=body.comment_text.strip(),
+        created_by=student.user_id,
+    )
+    db.add(comment)
+    db.add(
+        ApplicationLogHistory(
+            application_id=app.id,
+            action_type=ApplicationLogActionType.COMMENT_ADDED,
+            details="Student comment added",
+            changed_by=student.user_id,
+        )
+    )
+    db.commit()
+    db.refresh(comment)
+    return StudentCommentItem(
+        id=comment.id,
+        comment_text=comment.comment_text,
+        created_at=comment.created_at,
+    )
 
 
 @application_router.post("/submit", response_model=ApplicationSubmitResponse, status_code=status.HTTP_201_CREATED)
@@ -556,8 +1171,9 @@ def submit_student_application(
                 db.add(
                     ApplicationLogHistory(
                         application_id=application.id,
-                        action_type="status_change",
+                        action_type=ApplicationLogActionType.STATUS_CHANGE,
                         details="Application submitted by student",
+                        metadata_={"to_status": ApplicationStatus.SUBMITTED.value},
                         changed_by=user.id,
                     )
                 )

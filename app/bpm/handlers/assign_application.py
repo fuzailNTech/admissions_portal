@@ -10,7 +10,12 @@ from app.database.models.workflow import (
     WorkflowInstanceStep,
     WorkflowStepStatus,
 )
-from app.database.models.application import Application, ApplicationStatus
+from app.database.models.application import (
+    Application,
+    ApplicationStatus,
+    ApplicationLogHistory,
+    ApplicationLogActionType,
+)
 from app.database.models.institute import Institute
 from app.bpm.handlers.config import service_task
 from app.utils.smtp import send_mail_sync
@@ -144,11 +149,27 @@ def handle_auto_assign(
         context["assigned_to_email"] = assignee_email
         workflow_data["assigned_to_id"] = str(eligible.id)
         workflow_data["no_assignee_available"] = False
+        db.add(
+            ApplicationLogHistory(
+                application_id=application.id,
+                action_type=ApplicationLogActionType.APPLICATION_ASSIGNED,
+                details=f"Assigned to {assignee_name}",
+                changed_by=None,
+            )
+        )
     else:
         context["assigned_to_name"] = None
         context["assigned_to_email"] = None
         workflow_data["assigned_to_id"] = None
         workflow_data["no_assignee_available"] = True
+        db.add(
+            ApplicationLogHistory(
+                application_id=application.id,
+                action_type=ApplicationLogActionType.APPLICATION_ASSIGNED,
+                details="No eligible assignee; application unassigned",
+                changed_by=None,
+            )
+        )
 
 
 def _assignment_notification_body(assignee_name: str, application_number: str) -> str:
@@ -240,7 +261,18 @@ def handle_post_context(
             application_uuid = UUID(str(application_id_str))
             application = db.query(Application).filter(Application.id == application_uuid).first()
             if application:
-                application.status = ApplicationStatus.UNDER_REVIEW.value
+                old_status = application.status
+                from_status = getattr(old_status, "value", str(old_status))
+                application.status = ApplicationStatus.SUBMITTED.value
+                db.add(
+                    ApplicationLogHistory(
+                        application_id=application.id,
+                        action_type=ApplicationLogActionType.STATUS_CHANGE,
+                        details=f"Status changed from {from_status} to submitted assign completed",
+                        metadata_={"from_status": from_status, "to_status": ApplicationStatus.SUBMITTED.value},
+                        changed_by=None,
+                    )
+                )
                 db.add(application)
         except (ValueError, TypeError):
             pass

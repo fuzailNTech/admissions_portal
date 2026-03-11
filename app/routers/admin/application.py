@@ -24,6 +24,7 @@ from app.database.models.application import (
     Application,
     ApplicationComment,
     ApplicationDocument,
+    ApplicationLogActionType,
     ApplicationLogHistory,
     ApplicationSnapshot,
     ApplicationStatus,
@@ -422,6 +423,14 @@ def create_application_comment(
         created_by=current_staff.id,
     )
     db.add(comment)
+    db.add(
+        ApplicationLogHistory(
+            application_id=app.id,
+            action_type=ApplicationLogActionType.COMMENT_ADDED,
+            details="Staff comment added",
+            changed_by=current_staff.user_id,
+        )
+    )
     db.commit()
     db.refresh(comment)
 
@@ -476,11 +485,25 @@ def create_document_request(
     db.add(
         ApplicationLogHistory(
             application_id=app.id,
-            action_type="document_request_created",
+            action_type=ApplicationLogActionType.DOCUMENT_REQUEST_CREATED,
             details=f"Document requested: {body.document_name}",
             changed_by=current_staff.user_id,
         )
     )
+    # Any document request open -> application status documents_pending
+    old_status = app.status
+    from_status = getattr(old_status, "value", str(old_status))
+    app.status = ApplicationStatus.DOCUMENTS_PENDING
+    db.add(
+        ApplicationLogHistory(
+            application_id=app.id,
+            action_type=ApplicationLogActionType.STATUS_CHANGE,
+            details=f"Status changed from {from_status} to documents_pending (document requested)",
+            metadata_={"from_status": from_status, "to_status": ApplicationStatus.DOCUMENTS_PENDING.value},
+            changed_by=current_staff.user_id,
+        )
+    )
+    db.add(app)
     db.commit()
     db.refresh(doc)
     return ApplicationDocumentItem.model_validate(doc)
@@ -529,7 +552,7 @@ def update_document_verification(
     db.add(
         ApplicationLogHistory(
             application_id=doc.application_id,
-            action_type="document_verification_updated",
+            action_type=ApplicationLogActionType.DOCUMENT_VERIFICATION_UPDATED,
             details=details_msg,
             changed_by=current_staff.user_id,
         )

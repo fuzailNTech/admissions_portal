@@ -4,7 +4,12 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from SpiffWorkflow.task import Task
 
-from app.database.models.application import Application, ApplicationStatus
+from app.database.models.application import (
+    Application,
+    ApplicationStatus,
+    ApplicationLogHistory,
+    ApplicationLogActionType,
+)
 from app.database.models.auth import User
 from app.database.models.workflow import (
     WorkflowCatalog,
@@ -43,9 +48,21 @@ def _update_application_decision(
     db: Session,
 ) -> None:
     """Set application status, decision_notes, last_updated_at and commit."""
+    old_status = application.status
+    from_status = getattr(old_status, "value", str(old_status))
+    to_status = getattr(status, "value", str(status))
     application.status = status
     application.decision_notes = decision_notes
     application.last_updated_at = datetime.utcnow()
+    db.add(
+        ApplicationLogHistory(
+            application_id=application.id,
+            action_type=ApplicationLogActionType.STATUS_CHANGE,
+            details=f"Status changed from {from_status} to {to_status}",
+            metadata_={"from_status": from_status, "to_status": to_status},
+            changed_by=None,
+        )
+    )
     db.commit()
 
 
@@ -83,7 +100,21 @@ def handle_prepare_context(
     workflow = task.workflow
     workflow_data = workflow.top_workflow.data
 
-    _get_application_from_workflow(workflow_data, db)
+    application = _get_application_from_workflow(workflow_data, db)
+    old_status = application.status
+    from_status = getattr(old_status, "value", str(old_status))
+    application.status = ApplicationStatus.UNDER_REVIEW
+    db.add(
+        ApplicationLogHistory(
+            application_id=application.id,
+            action_type=ApplicationLogActionType.STATUS_CHANGE,
+            details=f"Status changed from {from_status} to under_review (admission decision started)",
+            metadata_={"from_status": from_status, "to_status": ApplicationStatus.UNDER_REVIEW.value},
+            changed_by=None,
+        )
+    )
+    db.add(application)
+    db.commit()
 
     workflow_data["_admission_decision_context"] = {
         "prepared_at": datetime.utcnow().isoformat(),

@@ -36,6 +36,7 @@ from app.database.models.application import (
     ApplicationDocument,
     ApplicationComment,
     StudentComment,
+    ApplicationLogActionType,
     ApplicationLogHistory,
     ApplicationNumberSequence,
     DocumentType,
@@ -79,6 +80,7 @@ __all__ = [
     "DocumentType",
     "ApplicationComment",
     "StudentComment",
+    "ApplicationLogActionType",
     "ApplicationLogHistory",
     "ApplicationNumberSequence",
 ]

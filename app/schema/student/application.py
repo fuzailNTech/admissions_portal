@@ -1,9 +1,13 @@
+from __future__ import annotations
+
+from enum import Enum
 from pydantic import BaseModel, Field, EmailStr, field_validator
-from typing import Optional, Dict, Any, List
+from typing import Literal, Optional, Dict, Any, List
 from uuid import UUID
 from datetime import datetime, date
 
 # Import enums from models
+from app.database.models.application import VerificationStatus
 from app.database.models.student import (
     GenderType, IdentityDocumentType, ReligionType, ProvinceType,
     GuardianRelationship, AcademicLevel, EducationGroup
@@ -238,4 +242,207 @@ class ApplicationSubmitResponse(BaseModel):
                 "message": "Application(s) submitted successfully. Check your email for application details and login credentials."
             }
         }
+
+
+# ==================== STUDENT APPLICATION LIST & DETAIL (MY APPLICATIONS) ====================
+
+
+class StudentApplicationStatus(str, Enum):
+    """Student-facing application status. Only mapping: internal on_hold -> under_review; all others pass through."""
+    SUBMITTED = "submitted"
+    UNDER_REVIEW = "under_review"
+    DOCUMENTS_PENDING = "documents_pending"
+    VERIFIED = "verified"
+    OFFERED = "offered"
+    REJECTED = "rejected"
+    ACCEPTED = "accepted"
+    WITHDRAWN = "withdrawn"
+
+
+class StudentApplicationListItem(BaseModel):
+    """Overview of one application for the student's list. No administrative details."""
+    id: UUID
+    application_number: str
+    status: StudentApplicationStatus
+    submitted_at: datetime
+    institute_name: Optional[str] = None
+    program_name: Optional[str] = None
+    campus_name: Optional[str] = None
+    quota_name: Optional[str] = None
+    uploaded_documents: List[DocumentRequestItem] = Field(default_factory=list, description="Documents uploaded with application")
+    requested_uploads: List[DocumentRequestItem] = Field(default_factory=list, description="Documents requested by staff with no file yet (pending upload)")
+    comments: List[ApplicationCommentItem] = Field(default_factory=list, description="Merged staff (non-internal) and student comments, sorted by created_at")
+
+    class Config:
+        from_attributes = True
+
+
+class StudentApplicationListResponse(BaseModel):
+    """List of current student's applications (overview only) with per-status counts."""
+    items: List[StudentApplicationListItem] = Field(..., description="Student's applications")
+    total: int = Field(..., ge=0, description="Total count")
+    submitted: int = Field(0, ge=0, description="Count of applications with status submitted")
+    under_review: int = Field(0, ge=0, description="Count of applications with status under_review (includes internal on_hold)")
+    documents_pending: int = Field(0, ge=0, description="Count of applications with status documents_pending")
+    verified: int = Field(0, ge=0, description="Count of applications with status verified")
+    offered: int = Field(0, ge=0, description="Count of applications with status offered")
+    rejected: int = Field(0, ge=0, description="Count of applications with status rejected")
+    accepted: int = Field(0, ge=0, description="Count of applications with status accepted")
+    withdrawn: int = Field(0, ge=0, description="Count of applications with status withdrawn")
+
+
+# ==================== TRACK APPLICATION (STATUS-BASED FROM LOG) ====================
+
+
+class ApplicationTrackStep(BaseModel):
+    """One status step in the application timeline (from log history)."""
+    status: StudentApplicationStatus
+    created_at: datetime
+
+
+class ApplicationTrackResponse(BaseModel):
+    """Status-based tracking for an application (from status_change log entries)."""
+    application_number: str
+    current_status: StudentApplicationStatus
+    steps: List[ApplicationTrackStep] = Field(..., description="Chronological status steps from log")
+
+
+class StudentGuardianDetail(BaseModel):
+    """Guardian info from application snapshot (student-facing)."""
+    id: UUID
+    guardian_relationship: str
+    first_name: str
+    last_name: str
+    phone_number: str
+    email: Optional[str] = None
+    occupation: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class StudentAcademicRecordDetail(BaseModel):
+    """Academic record from application snapshot (student-facing). No verification internals."""
+    id: UUID
+    level: str
+    education_group: Optional[str] = None
+    institute_name: str
+    board_name: str
+    roll_number: str
+    year_of_passing: int
+    total_marks: int
+    obtained_marks: int
+    grade: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+# ==================== DOCUMENT REQUESTS (UPLOADED + REQUESTED – SAME ITEM SHAPE) ====================
+
+
+class DocumentRequestItem(BaseModel):
+    """A document requested by staff that is pending (student can or has uploaded)."""
+    id: UUID
+    document_type: str
+    document_name: str
+    description: Optional[str] = None
+    requested_at: Optional[datetime] = None
+    verification_status: VerificationStatus
+    uploaded_at: Optional[datetime] = None
+    file_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class DocumentRequestListResponse(BaseModel):
+    """List of pending document requests for an application."""
+    items: List[DocumentRequestItem] = Field(..., description="Pending document requests")
+
+
+class DocumentRequestUploadRequest(BaseModel):
+    """Body to resolve a document request by uploading (client passes URL; S3 later)."""
+    file_url: str = Field(..., min_length=1, max_length=500, description="URL of the uploaded document")
+
+
+# ==================== COMMENTS (MERGED STAFF + STUDENT, SAME PATTERN AS ADMIN) ====================
+
+
+class ApplicationCommentItem(BaseModel):
+    """Unified comment item (staff or student). Merged and sorted by created_at."""
+    id: UUID
+    comment_text: str
+    created_at: datetime
+    author_type: Literal["staff", "student"]
+    author_display_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+# ==================== STUDENT COMMENTS ====================
+
+
+class StudentCommentCreate(BaseModel):
+    """Request body for student to add a comment on their application."""
+    comment_text: str = Field(..., min_length=1, max_length=5000, description="Comment content")
+
+
+class StudentCommentItem(BaseModel):
+    """Student's own comment on an application (response)."""
+    id: UUID
+    comment_text: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class StudentApplicationDetailResponse(BaseModel):
+    """Full application detail for the student. No assigned_to, decision_notes, workflow_instance_id, etc."""
+    # Application metadata (student-visible only)
+    id: UUID
+    application_number: str
+    status: StudentApplicationStatus
+    submitted_at: datetime
+    offer_expires_at: Optional[datetime] = None
+    # Target
+    institute_id: UUID
+    institute_name: Optional[str] = None
+    program_name: Optional[str] = None
+    campus_name: Optional[str] = None
+    quota_name: Optional[str] = None
+    # Applicant snapshot (read-only as submitted)
+    profile_captured_at: datetime
+    first_name: str
+    last_name: str
+    father_name: str
+    gender: str
+    date_of_birth: date
+    identity_doc_type: str
+    identity_doc_number: str
+    religion: Optional[str] = None
+    nationality: str
+    is_disabled: bool
+    disability_details: Optional[str] = None
+    primary_email: str
+    primary_phone: str
+    alternate_phone: Optional[str] = None
+    street_address: str
+    city: str
+    district: str
+    province: str
+    postal_code: Optional[str] = None
+    domicile_province: str
+    domicile_district: str
+    # Related (student-visible)
+    guardians: List[StudentGuardianDetail] = Field(default_factory=list)
+    academic_records: List[StudentAcademicRecordDetail] = Field(default_factory=list)
+    uploaded_documents: List[DocumentRequestItem] = Field(default_factory=list, description="Documents uploaded with application")
+    requested_uploads: List[DocumentRequestItem] = Field(default_factory=list, description="Documents requested by staff with no file yet (pending upload)")
+    comments: List[ApplicationCommentItem] = Field(default_factory=list, description="Merged staff (non-internal) and student comments, sorted by created_at")
+
+    class Config:
+        from_attributes = True
 

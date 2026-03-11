@@ -4,7 +4,12 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from SpiffWorkflow.task import Task
 
-from app.database.models.application import Application
+from app.database.models.application import (
+    Application,
+    ApplicationStatus,
+    ApplicationLogHistory,
+    ApplicationLogActionType,
+)
 from app.database.models.auth import User
 from app.database.models.workflow import (
     WorkflowCatalog,
@@ -151,3 +156,27 @@ def handle_post_context(
         step.completed_at = now
         step.current_tasks = []
         db.add(step)
+
+    # When verification completed (not rejected), set application status to verified
+    if step and verification_status != "rejected":
+        application_id_str = workflow_data.get("application_id")
+        if application_id_str:
+            try:
+                application_uuid = UUID(str(application_id_str))
+                application = db.query(Application).filter(Application.id == application_uuid).first()
+                if application:
+                    old_status = application.status
+                    from_status = getattr(old_status, "value", str(old_status))
+                    application.status = ApplicationStatus.VERIFIED
+                    db.add(
+                        ApplicationLogHistory(
+                            application_id=application.id,
+                            action_type=ApplicationLogActionType.STATUS_CHANGE,
+                            details=f"Status changed from {from_status} to verified (document verification completed)",
+                            metadata_={"from_status": from_status, "to_status": ApplicationStatus.VERIFIED.value},
+                            changed_by=None,
+                        )
+                    )
+                    db.add(application)
+            except (ValueError, TypeError):
+                pass
