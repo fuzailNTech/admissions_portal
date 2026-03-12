@@ -58,6 +58,7 @@ class EmailConfigDebug(BaseModel):
     MAIL_PASSWORD_set: bool
     MAIL_STARTTLS: bool
     MAIL_SSL_TLS: bool
+    MAIL_USE_API: bool = False
     config_ok: bool
     config_error: Optional[str] = None
 
@@ -145,24 +146,34 @@ def _get_email_config_debug() -> dict:
     debug: dict = {}
     config_ok = True
     config_error = None
+    use_api = getattr(settings, "MAIL_USE_API", False)
 
     try:
         debug["MAIL_SERVER"] = getattr(settings, "MAIL_SERVER", None)
         debug["MAIL_PORT"] = getattr(settings, "MAIL_PORT", None)
         debug["MAIL_FROM"] = getattr(settings, "MAIL_FROM", None)
         debug["MAIL_USERNAME"] = (
-            f"{settings.MAIL_USERNAME[:3]}***" if settings.MAIL_USERNAME else None
+            f"{settings.MAIL_USERNAME[:3]}***" if getattr(settings, "MAIL_USERNAME", None) else None
         )
-        debug["MAIL_USERNAME_set"] = bool(settings.MAIL_USERNAME)
+        debug["MAIL_USERNAME_set"] = bool(getattr(settings, "MAIL_USERNAME", None))
         debug["MAIL_PASSWORD_set"] = bool(getattr(settings, "MAIL_PASSWORD", None))
         debug["MAIL_STARTTLS"] = getattr(settings, "MAIL_STARTTLS", None)
         debug["MAIL_SSL_TLS"] = getattr(settings, "MAIL_SSL_TLS", None)
+        debug["MAIL_USE_API"] = use_api
     except Exception as e:
         config_ok = False
         config_error = str(e)
         logger.exception("Error reading mail config for debug")
         debug["config_error"] = config_error
 
+    if use_api:
+        config_ok = bool(debug.get("MAIL_FROM")) and bool(debug.get("MAIL_PASSWORD_set"))
+    else:
+        config_ok = (
+            bool(debug.get("MAIL_SERVER"))
+            and debug.get("MAIL_PORT") is not None
+            and bool(debug.get("MAIL_FROM"))
+        )
     debug["config_ok"] = config_ok
     if config_error:
         debug["config_error"] = config_error
@@ -174,12 +185,22 @@ def get_email_config_debug():
     """
     Return current mail configuration for debugging (passwords never shown).
 
-    Useful on Render to verify MAIL_* env vars are set and loaded.
+    Useful on Render to verify MAIL_* env vars and MAIL_USE_API are set.
     """
     try:
         port = getattr(settings, "MAIL_PORT", None)
     except Exception as e:
         port = f"ERROR: {e}"
+    use_api = getattr(settings, "MAIL_USE_API", False)
+    config_ok = (
+        (bool(getattr(settings, "MAIL_FROM", None)) and bool(getattr(settings, "MAIL_PASSWORD", None)))
+        if use_api
+        else (
+            bool(getattr(settings, "MAIL_SERVER", None))
+            and getattr(settings, "MAIL_PORT", None) is not None
+            and bool(getattr(settings, "MAIL_FROM", None))
+        )
+    )
     return EmailConfigDebug(
         MAIL_SERVER=getattr(settings, "MAIL_SERVER", None),
         MAIL_PORT=port,
@@ -191,11 +212,8 @@ def get_email_config_debug():
         MAIL_PASSWORD_set=bool(getattr(settings, "MAIL_PASSWORD", None)),
         MAIL_STARTTLS=getattr(settings, "MAIL_STARTTLS", False),
         MAIL_SSL_TLS=getattr(settings, "MAIL_SSL_TLS", False),
-        config_ok=(
-            bool(getattr(settings, "MAIL_SERVER", None))
-            and getattr(settings, "MAIL_PORT", None) is not None
-            and bool(getattr(settings, "MAIL_FROM", None))
-        ),
+        MAIL_USE_API=use_api,
+        config_ok=config_ok,
         config_error=None,
     )
 
