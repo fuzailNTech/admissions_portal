@@ -999,7 +999,7 @@ def submit_student_application(
                     email=request.student_profile.primary_email,
                     password_hash=get_password_hash(student_password),
                     is_temporary_password=True,
-                    verified=False,
+                    verified=True,
                     is_active=True
                 )
                 db.add(user)
