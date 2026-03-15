@@ -337,8 +337,8 @@ def list_my_applications(
         if app.preferred_program_cycle and app.preferred_program_cycle.program:
             program_name = app.preferred_program_cycle.program.name
         all_docs = app.documents or []
-        uploaded_documents = [_doc_to_request_item(d) for d in all_docs if d.requested_by is None]
-        requested_uploads = [_doc_to_request_item(d) for d in all_docs if d.requested_by is not None and not d.file_url]
+        uploaded_documents = [_doc_to_request_item(d) for d in all_docs if d.file_url is not None]
+        requested_uploads = [_doc_to_request_item(d) for d in all_docs if d.file_url is None]
         items.append(
             StudentApplicationListItem(
                 id=app.id,
@@ -381,9 +381,17 @@ def _build_track_response(app: Application, log_entries: list) -> ApplicationTra
                 created_at=entry.created_at,
             )
         )
+    institute_name = app.institute.name if app.institute else ""
+    programme_name = (
+        app.preferred_program_cycle.program.name
+        if app.preferred_program_cycle and app.preferred_program_cycle.program
+        else ""
+    )
     return ApplicationTrackResponse(
         application_number=app.application_number,
         current_status=_student_status(app.status),
+        institute_name=institute_name,
+        programme_name=programme_name,
         steps=steps,
     )
 
@@ -404,6 +412,10 @@ def track_my_applications(
     """
     applications = (
         db.query(Application)
+        .options(
+            joinedload(Application.institute),
+            joinedload(Application.preferred_program_cycle).joinedload(ProgramAdmissionCycle.program),
+        )
         .filter(Application.student_profile_id == student.id)
         .order_by(Application.submitted_at.desc())
         .all()
