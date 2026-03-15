@@ -304,6 +304,8 @@ class ApplicationTrackResponse(BaseModel):
     """Status-based tracking for an application (from status_change log entries)."""
     application_number: str
     current_status: StudentApplicationStatus
+    institute_name: str = Field(..., description="Name of the institute")
+    programme_name: str = Field(..., description="Name of the programme")
     steps: List[ApplicationTrackStep] = Field(..., description="Chronological status steps from log")
 
 
