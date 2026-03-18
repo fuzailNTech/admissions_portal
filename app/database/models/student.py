@@ -150,9 +150,9 @@ class StudentProfile(Base):
     domicile_district = Column(String(100), nullable=False)
     
     # ==================== DOCUMENTS (S3 URLs) ====================
-    # Universal documents only
-    profile_picture_url = Column(String(500), nullable=False)
-    identity_doc_url = Column(String(500), nullable=False)
+    # Universal documents only (nullable until uploaded)
+    profile_picture_url = Column(String(500), nullable=True)
+    identity_doc_url = Column(String(500), nullable=True)
     
     # ==================== METADATA ====================
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -279,7 +279,7 @@ class StudentAcademicRecord(Base):
     # A+, A, B, C, etc. (Pakistani grading system)
     
     # ==================== DOCUMENTS (S3 URLs) ====================
-    result_card_url = Column(String(500), nullable=False)
+    result_card_url = Column(String(500), nullable=True)
     
     # ==================== METADATA ====================
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -1,7 +1,8 @@
+import secrets
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Query
 from sqlalchemy.orm import Session, joinedload
 from typing import Dict, List, Tuple, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from app.database.config.db import get_db
 from app.database.models.workflow import (
@@ -31,6 +32,7 @@ from app.database.models.application import (
     StudentComment,
     VerificationStatus,
     DocumentType,
+    UploadToken,
 )
 from app.database.models.admission import (
     ProgramAdmissionCycle,
@@ -44,6 +46,9 @@ from app.schema.student.application import (
     ApplicationResponse,
     ApplicationSubmitRequest,
     ApplicationSubmitResponse,
+    ApplicationUploadUrlsRequest,
+    ApplicationUploadUrlsResponse,
+    UploadUrlItem,
     StudentApplicationStatus,
     StudentApplicationListItem,
     StudentApplicationListResponse,
@@ -62,13 +67,14 @@ from app.schema.student.application import (
 from app.utils.auth import get_current_active_user, get_current_student, get_password_hash, generate_strong_password
 from app.utils.admission import generate_application_number
 from app.utils.smtp import send_mail
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from app.bpm.engine import (
     load_spec_from_xml,
     create_workflow_instance,
     dumps_wf,
 )
 from app.utils.engine import run_service_tasks_and_persist_steps
+from app import s3 as s3_module
 
 application_router = APIRouter(
     prefix="/application",
@@ -252,6 +258,120 @@ def create_workflow_instance_steps(
         db.add(step)
     db.flush()
 
+
+def _validate_program_targets(applied_programs: List, db: Session) -> Dict[int, Tuple]:
+    """
+    Validate all program targets (institute, program, campus, cycle, quota).
+    Returns program_cycles_map: idx -> (program_cycle, admission_cycle).
+    Raises HTTPException on any validation failure.
+    """
+    from app.database.models.admission import (
+        ProgramAdmissionCycle,
+        CampusAdmissionCycle,
+        AdmissionCycle,
+        ProgramQuota,
+        AdmissionCycleStatus,
+    )
+    program_cycles_map = {}
+    for idx, program_data in enumerate(applied_programs):
+        institute = db.query(Institute).filter(Institute.id == program_data.institute_id).first()
+        if not institute:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Institute with id {program_data.institute_id} not found")
+        program = db.query(Program).filter(Program.id == program_data.program_id, Program.institute_id == program_data.institute_id).first()
+        if not program:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found or does not belong to this institute")
+        campus = db.query(Campus).filter(Campus.id == program_data.preferred_campus_id, Campus.institute_id == program_data.institute_id).first()
+        if not campus:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campus not found or does not belong to this institute")
+        admission_cycle = db.query(AdmissionCycle).filter(
+            AdmissionCycle.institute_id == program_data.institute_id,
+            AdmissionCycle.status == AdmissionCycleStatus.OPEN,
+            AdmissionCycle.is_published == True,
+        ).first()
+        if not admission_cycle:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No active admission cycle found for this institute")
+        now = datetime.now(admission_cycle.application_start_date.tzinfo)
+        if now < admission_cycle.application_start_date:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Application period has not started yet")
+        if now > admission_cycle.application_end_date:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Application period has ended")
+        campus_cycle = db.query(CampusAdmissionCycle).filter(
+            CampusAdmissionCycle.campus_id == program_data.preferred_campus_id,
+            CampusAdmissionCycle.admission_cycle_id == admission_cycle.id,
+        ).first()
+        if not campus_cycle:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campus is not participating in the current admission cycle")
+        if not campus_cycle.is_open:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Campus is not accepting applications. Reason: {campus_cycle.closure_reason or 'Not specified'}")
+        program_cycle = db.query(ProgramAdmissionCycle).filter(
+            ProgramAdmissionCycle.program_id == program_data.program_id,
+            ProgramAdmissionCycle.campus_admission_cycle_id == campus_cycle.id,
+        ).first()
+        if not program_cycle:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This program is not offered at the selected campus for the current admission cycle")
+        if not program_cycle.is_active:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Program is not currently accepting applications")
+        quota = db.query(ProgramQuota).filter(
+            ProgramQuota.id == program_data.quota_id,
+            ProgramQuota.program_cycle_id == program_cycle.id,
+        ).first()
+        if not quota:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quota not found or does not belong to this program cycle")
+        program_cycles_map[idx] = (program_cycle, admission_cycle)
+    return program_cycles_map
+
+
+# S3 key prefixes for submit flow
+UPLOAD_PENDING_PREFIX = "uploads/pending"
+SUBMITTED_PREFIX = "applications"
+STUDENTS_PREFIX = "students"
+
+
+@application_router.post(
+    "/upload-urls",
+    response_model=ApplicationUploadUrlsResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get presigned upload URLs for application documents",
+)
+def get_upload_urls(
+    body: ApplicationUploadUrlsRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Validate submit payload (without document URLs) and return a short-lived upload token
+    plus presigned PUT URLs for profile picture, identity document, and result card.
+    Client uploads to S3 using these URLs, then calls POST /submit with the same form data
+    and the document object_urls plus this upload_token.
+    """
+    if not s3_module.get_bucket():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Document upload is not configured")
+    _validate_program_targets(body.applied_programs, db)
+    token_str = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    upload_token = UploadToken(token=token_str, expires_at=expires_at)
+    db.add(upload_token)
+    db.commit()
+    prefix = f"{UPLOAD_PENDING_PREFIX}/{token_str}"
+    keys = {
+        "profile_picture": f"{prefix}/profile_picture.jpg",
+        "identity_document": f"{prefix}/identity_document.jpg",
+        "academic_result_card": f"{prefix}/academic_result_card.pdf",
+    }
+    return ApplicationUploadUrlsResponse(
+        upload_token=token_str,
+        profile_picture=UploadUrlItem(
+            upload_url=s3_module.generate_presigned_put(keys["profile_picture"]),
+            object_url=s3_module.object_url(keys["profile_picture"]),
+        ),
+        identity_document=UploadUrlItem(
+            upload_url=s3_module.generate_presigned_put(keys["identity_document"]),
+            object_url=s3_module.object_url(keys["identity_document"]),
+        ),
+        academic_result_card=UploadUrlItem(
+            upload_url=s3_module.generate_presigned_put(keys["academic_result_card"]),
+            object_url=s3_module.object_url(keys["academic_result_card"]),
+        ),
+    )
 
 
 @application_router.get(
@@ -827,122 +947,26 @@ def submit_student_application(
     - Ensures data consistency across multiple program applications
     """
     try:
-        # Start transaction
         with db.begin_nested():
-            
+            # ==================== UPLOAD TOKEN & DOCUMENT URL VALIDATION ====================
+            now_utc = datetime.now(timezone.utc)
+            upload_token_row = db.query(UploadToken).filter(UploadToken.token == request.upload_token).first()
+            if not upload_token_row or upload_token_row.expires_at < now_utc or upload_token_row.used_at:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired upload token")
+            pending_prefix = f"{UPLOAD_PENDING_PREFIX}/{request.upload_token}"
+            expected_profile_url = s3_module.object_url(f"{pending_prefix}/profile_picture.jpg")
+            expected_identity_url = s3_module.object_url(f"{pending_prefix}/identity_document.jpg")
+            expected_result_url = s3_module.object_url(f"{pending_prefix}/academic_result_card.pdf")
+            if request.student_profile.profile_picture_url != expected_profile_url:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid profile picture URL for this upload token")
+            if request.student_profile.identity_doc_url != expected_identity_url:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid identity document URL for this upload token")
+            if request.academic_record.result_card_url != expected_result_url:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid result card URL for this upload token")
+
             # ==================== STEP 1: VALIDATE ALL PROGRAM TARGETS ====================
-            # Store resolved program cycles for each application
-            program_cycles_map = {}  # Key: index, Value: (program_cycle, admission_cycle)
-            
-            for idx, program_data in enumerate(request.applied_programs):
-                
-                # Check institute exists
-                institute = db.query(Institute).filter(
-                    Institute.id == program_data.institute_id
-                ).first()
-                if not institute:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Institute with id {program_data.institute_id} not found"
-                    )
-                
-                # Check program exists and belongs to institute
-                program = db.query(Program).filter(
-                    Program.id == program_data.program_id,
-                    Program.institute_id == program_data.institute_id
-                ).first()
-                if not program:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Program not found or does not belong to this institute"
-                    )
-                
-                # Check campus exists and belongs to institute
-                campus = db.query(Campus).filter(
-                    Campus.id == program_data.preferred_campus_id,
-                    Campus.institute_id == program_data.institute_id
-                ).first()
-                if not campus:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Campus not found or does not belong to this institute"
-                    )
-                
-                # Get active/open admission cycle for the institute
-                admission_cycle = db.query(AdmissionCycle).filter(
-                    AdmissionCycle.institute_id == program_data.institute_id,
-                    AdmissionCycle.status == AdmissionCycleStatus.OPEN,
-                    AdmissionCycle.is_published == True
-                ).first()
-                if not admission_cycle:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="No active admission cycle found for this institute"
-                    )
-                
-                # Check if within application date range
-                now = datetime.now(admission_cycle.application_start_date.tzinfo)
-                if now < admission_cycle.application_start_date:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Application period has not started yet"
-                    )
-                if now > admission_cycle.application_end_date:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Application period has ended"
-                    )
-                
-                # Get campus admission cycle
-                campus_cycle = db.query(CampusAdmissionCycle).filter(
-                    CampusAdmissionCycle.campus_id == program_data.preferred_campus_id,
-                    CampusAdmissionCycle.admission_cycle_id == admission_cycle.id
-                ).first()
-                if not campus_cycle:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Campus is not participating in the current admission cycle"
-                    )
-                
-                # Check if campus is open for applications
-                if not campus_cycle.is_open:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Campus is not accepting applications. Reason: {campus_cycle.closure_reason or 'Not specified'}"
-                    )
-                
-                # Find program cycle for this program + campus combination
-                program_cycle = db.query(ProgramAdmissionCycle).filter(
-                    ProgramAdmissionCycle.program_id == program_data.program_id,
-                    ProgramAdmissionCycle.campus_admission_cycle_id == campus_cycle.id
-                ).first()
-                if not program_cycle:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="This program is not offered at the selected campus for the current admission cycle"
-                    )
-                
-                # Check if program cycle is active
-                if not program_cycle.is_active:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Program is not currently accepting applications"
-                    )
-                
-                # Check quota exists and is valid
-                quota = db.query(ProgramQuota).filter(
-                    ProgramQuota.id == program_data.quota_id,
-                    ProgramQuota.program_cycle_id == program_cycle.id
-                ).first()
-                if not quota:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Quota not found or does not belong to this program cycle"
-                    )
-                
-                # Store resolved program cycle and admission cycle for later use
-                program_cycles_map[idx] = (program_cycle, admission_cycle)
-            
+            program_cycles_map = _validate_program_targets(request.applied_programs, db)
+
             # ==================== STEP 2: HANDLE USER & PROFILE ====================
             
             # Check if student exists by identity document
@@ -1017,7 +1041,7 @@ def submit_student_application(
                 db.add(user)
                 db.flush()
                 
-                # Create student profile
+                # Create student profile (URLs set after copy to students/)
                 profile = StudentProfile(
                     user_id=user.id,
                     first_name=request.student_profile.first_name,
@@ -1041,12 +1065,18 @@ def submit_student_application(
                     postal_code=request.student_profile.postal_code,
                     domicile_province=request.student_profile.domicile_province,
                     domicile_district=request.student_profile.domicile_district,
-                    profile_picture_url=request.student_profile.profile_picture_url,
-                    identity_doc_url=request.student_profile.identity_doc_url,
+                    profile_picture_url="",  # set below after copy
+                    identity_doc_url="",  # set below after copy
                 )
                 db.add(profile)
                 db.flush()
-                
+
+                student_prefix = f"{STUDENTS_PREFIX}/{profile.id}"
+                s3_module.copy_object(f"{pending_prefix}/profile_picture.jpg", f"{student_prefix}/profile/profile.png")
+                s3_module.copy_object(f"{pending_prefix}/identity_document.jpg", f"{student_prefix}/identity/document.jpg")
+                profile.profile_picture_url = s3_module.object_url(f"{student_prefix}/profile/profile.png")
+                profile.identity_doc_url = s3_module.object_url(f"{student_prefix}/identity/document.jpg")
+
                 # Create guardian
                 guardian = StudentGuardian(
                     student_profile_id=profile.id,
@@ -1061,7 +1091,7 @@ def submit_student_application(
                 )
                 db.add(guardian)
                 
-                # Create academic record
+                # Create academic record (result_card_url set after copy to students/)
                 academic_record = StudentAcademicRecord(
                     student_profile_id=profile.id,
                     level=request.academic_record.level,
@@ -1073,11 +1103,14 @@ def submit_student_application(
                     total_marks=request.academic_record.total_marks,
                     obtained_marks=request.academic_record.obtained_marks,
                     grade=request.academic_record.grade,
-                    result_card_url=request.academic_record.result_card_url,
+                    result_card_url="",  # set below after copy
                 )
                 db.add(academic_record)
                 db.flush()
-                
+
+                s3_module.copy_object(f"{pending_prefix}/academic_result_card.pdf", f"{student_prefix}/academic/{academic_record.id}/result_card.pdf")
+                academic_record.result_card_url = s3_module.object_url(f"{student_prefix}/academic/{academic_record.id}/result_card.pdf")
+
                 existing_profile = profile
             
             # ==================== STEP 3: CREATE APPLICATIONS ====================
@@ -1085,18 +1118,24 @@ def submit_student_application(
             application_numbers = []
             
             for idx, program_data in enumerate(request.applied_programs):
-                # Get resolved program cycle and admission cycle from validation
                 program_cycle, admission_cycle = program_cycles_map[idx]
                 academic_year = admission_cycle.academic_year
-                
-                # Generate application number
+
+                application_id = uuid4()
+                submitted_prefix = f"{SUBMITTED_PREFIX}/{application_id}/submitted"
+                s3_module.copy_object(f"{pending_prefix}/profile_picture.jpg", f"{submitted_prefix}/profile_picture.jpg")
+                s3_module.copy_object(f"{pending_prefix}/identity_document.jpg", f"{submitted_prefix}/identity_document.jpg")
+                s3_module.copy_object(f"{pending_prefix}/academic_result_card.pdf", f"{submitted_prefix}/academic_result_card.pdf")
+                final_profile_url = s3_module.object_url(f"{submitted_prefix}/profile_picture.jpg")
+                final_identity_url = s3_module.object_url(f"{submitted_prefix}/identity_document.jpg")
+                final_result_url = s3_module.object_url(f"{submitted_prefix}/academic_result_card.pdf")
+
                 application_number = generate_application_number(
                     db=db,
                     institute_id=program_data.institute_id,
-                    academic_year=academic_year
+                    academic_year=academic_year,
                 )
-                
-                # Create application snapshot (from submitted data)
+
                 snapshot = ApplicationSnapshot(
                     snapshot_created_at=datetime.utcnow(),
                     source_profile_id=existing_profile.id,
@@ -1121,13 +1160,12 @@ def submit_student_application(
                     postal_code=request.student_profile.postal_code,
                     domicile_province=request.student_profile.domicile_province.value,
                     domicile_district=request.student_profile.domicile_district,
-                    profile_picture_url=request.student_profile.profile_picture_url,
-                    identity_doc_url=request.student_profile.identity_doc_url,
+                    profile_picture_url=final_profile_url,
+                    identity_doc_url=final_identity_url,
                 )
                 db.add(snapshot)
                 db.flush()
-                
-                # Create guardian snapshot
+
                 guardian_snapshot = ApplicationGuardianSnapshot(
                     application_snapshot_id=snapshot.id,
                     source_guardian_id=None,
@@ -1141,8 +1179,7 @@ def submit_student_application(
                     is_primary=request.guardian.is_primary,
                 )
                 db.add(guardian_snapshot)
-                
-                # Create academic snapshot
+
                 academic_snapshot = ApplicationAcademicSnapshot(
                     application_snapshot_id=snapshot.id,
                     source_academic_id=None,
@@ -1155,15 +1192,15 @@ def submit_student_application(
                     total_marks=request.academic_record.total_marks,
                     obtained_marks=request.academic_record.obtained_marks,
                     grade=request.academic_record.grade,
-                    result_card_url=request.academic_record.result_card_url,
+                    result_card_url=final_result_url,
                     is_verified=False,
                     verification_status=VerificationStatus.PENDING,
                 )
                 db.add(academic_snapshot)
                 db.flush()
-                
-                # Create application
+
                 application = Application(
+                    id=application_id,
                     application_number=application_number,
                     student_profile_id=existing_profile.id,
                     user_id=user.id,
@@ -1174,12 +1211,11 @@ def submit_student_application(
                     quota_id=program_data.quota_id,
                     status=ApplicationStatus.SUBMITTED,
                     submitted_at=datetime.utcnow(),
-                    workflow_instance_id=None,  # Will be set if workflow exists
+                    workflow_instance_id=None,
                 )
                 db.add(application)
                 db.flush()
-                
-                # Log application submitted
+
                 db.add(
                     ApplicationLogHistory(
                         application_id=application.id,
@@ -1190,13 +1226,12 @@ def submit_student_application(
                     )
                 )
 
-                # Create application documents (single source for this application)
                 db.add(
                     ApplicationDocument(
                         application_id=application.id,
                         document_type=DocumentType.PROFILE_PICTURE,
                         document_name="Profile picture",
-                        file_url=request.student_profile.profile_picture_url,
+                        file_url=final_profile_url,
                     )
                 )
                 db.add(
@@ -1204,7 +1239,7 @@ def submit_student_application(
                         application_id=application.id,
                         document_type=DocumentType.IDENTITY_DOCUMENT,
                         document_name="Identity document",
-                        file_url=request.student_profile.identity_doc_url,
+                        file_url=final_identity_url,
                     )
                 )
                 db.add(
@@ -1212,7 +1247,7 @@ def submit_student_application(
                         application_id=application.id,
                         document_type=DocumentType.ACADEMIC_RESULT_CARD,
                         document_name=f"Result card ({request.academic_record.level.value})",
-                        file_url=request.academic_record.result_card_url,
+                        file_url=final_result_url,
                     )
                 )
 
@@ -1290,10 +1325,23 @@ def submit_student_application(
                         # Application is still created, just without workflow
                 
                 application_numbers.append(application_number)
-            
+
+            upload_token_row.used_at = now_utc
+            db.add(upload_token_row)
+
             # Commit transaction
             db.commit()
-            
+
+            # Delete pending upload objects (submit succeeded; no longer needed)
+            try:
+                s3_module.delete_objects([
+                    f"{pending_prefix}/profile_picture.jpg",
+                    f"{pending_prefix}/identity_document.jpg",
+                    f"{pending_prefix}/academic_result_card.pdf",
+                ])
+            except Exception:
+                pass  # best-effort; submit already committed
+
             # ==================== STEP 4: SEND NOTIFICATIONS ====================
             # Student credentials email (new students only). Application received email is handled by workflow.
             if is_new_student and student_password:

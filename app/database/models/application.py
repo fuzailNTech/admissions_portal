@@ -645,3 +645,18 @@ class ApplicationNumberSequence(Base):
         UniqueConstraint('institute_id', 'academic_year', name='uq_institute_year_sequence'),
         Index('ix_sequence_institute_year', 'institute_id', 'academic_year'),
     )
+
+
+class UploadToken(Base):
+    """Short-lived token for binding presigned uploads to a single submit attempt."""
+    __tablename__ = "upload_tokens"
+
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        nullable=False,
+    )
+    token = Column(String(64), unique=True, nullable=False, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    used_at = Column(DateTime(timezone=True), nullable=True)

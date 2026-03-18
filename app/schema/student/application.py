@@ -45,66 +45,51 @@ class ApplicationResponse(BaseModel):
 
 # ==================== STUDENT APPLICATION SUBMISSION ====================
 
-class StudentProfileSubmit(BaseModel):
-    """Student profile data for application submission"""
-    
-    # Personal Information
+class StudentProfileBase(BaseModel):
+    """Shared student profile fields (no document URLs)."""
     first_name: str = Field(..., min_length=1, max_length=100, description="First name")
     last_name: str = Field(..., min_length=1, max_length=100, description="Last name")
     father_name: str = Field(..., min_length=1, max_length=100, description="Father's name")
-    
     gender: GenderType = Field(..., description="Gender")
     date_of_birth: date = Field(..., description="Date of birth")
-    
-    # Identity Document
     identity_doc_type: IdentityDocumentType = Field(..., description="Type of identity document (CNIC or B-Form)")
     identity_doc_number: str = Field(..., min_length=15, max_length=15, description="Identity document number (format: XXXXX-XXXXXXX-X)")
-    
     religion: Optional[ReligionType] = Field(None, description="Religion")
     nationality: str = Field(default="Pakistani", max_length=50, description="Nationality")
-    
-    # Disability Information
     is_disabled: bool = Field(default=False, description="Is the student disabled?")
     disability_details: Optional[str] = Field(None, description="Details about disability if applicable")
-    
-    # Contact Information
     primary_email: EmailStr = Field(..., description="Primary email address")
     primary_phone: str = Field(..., min_length=10, max_length=20, description="Primary phone number")
     alternate_phone: Optional[str] = Field(None, min_length=10, max_length=20, description="Alternate phone number")
-    
-    # Address
     street_address: str = Field(..., min_length=1, description="Street address")
     city: str = Field(..., min_length=1, max_length=100, description="City")
     district: str = Field(..., min_length=1, max_length=100, description="District")
     province: ProvinceType = Field(..., description="Province")
     postal_code: Optional[str] = Field(None, max_length=10, description="Postal code")
-    
-    # Domicile
     domicile_province: ProvinceType = Field(..., description="Domicile province")
     domicile_district: str = Field(..., min_length=1, max_length=100, description="Domicile district")
-    
-    # Documents (S3 URLs)
-    profile_picture_url: str = Field(..., description="URL to profile picture")
-    identity_doc_url: str = Field(..., description="URL to identity document scan")
-    
-    @field_validator('identity_doc_number')
+
+    @field_validator("identity_doc_number")
     @classmethod
     def validate_identity_doc_format(cls, v: str) -> str:
-        """Validate CNIC/B-Form format: XXXXX-XXXXXXX-X"""
         if not v or len(v) != 15:
-            raise ValueError('Identity document must be 15 characters (format: XXXXX-XXXXXXX-X)')
-        
-        parts = v.split('-')
-        if len(parts) != 3:
-            raise ValueError('Identity document format must be: XXXXX-XXXXXXX-X')
-        
-        if len(parts[0]) != 5 or len(parts[1]) != 7 or len(parts[2]) != 1:
-            raise ValueError('Identity document format must be: XXXXX-XXXXXXX-X')
-        
-        if not all(part.isdigit() for part in parts):
-            raise ValueError('Identity document must contain only digits and dashes')
-        
+            raise ValueError("Identity document must be 15 characters (format: XXXXX-XXXXXXX-X)")
+        parts = v.split("-")
+        if len(parts) != 3 or len(parts[0]) != 5 or len(parts[1]) != 7 or len(parts[2]) != 1:
+            raise ValueError("Identity document format must be: XXXXX-XXXXXXX-X")
+        if not all(p.isdigit() for p in parts):
+            raise ValueError("Identity document must contain only digits and dashes")
         return v
+
+
+class StudentProfileForUploadUrls(StudentProfileBase):
+    """Student profile for upload-urls request (no document URLs)."""
+
+
+class StudentProfileSubmit(StudentProfileBase):
+    """Student profile data for application submission (includes document URLs)."""
+    profile_picture_url: str = Field(..., description="URL to profile picture")
+    identity_doc_url: str = Field(..., description="URL to identity document scan")
 
 
 class GuardianSubmit(BaseModel):
@@ -122,32 +107,34 @@ class GuardianSubmit(BaseModel):
     is_primary: bool = Field(True, description="Is this the primary guardian/contact? (default: true)")
 
 
-class AcademicRecordSubmit(BaseModel):
-    """Academic record information for application submission"""
-    
+class AcademicRecordBase(BaseModel):
+    """Shared academic record fields (no result_card_url)."""
     level: AcademicLevel = Field(AcademicLevel.SECONDARY, description="Academic level (default: secondary/Matric)")
     education_group: Optional[EducationGroup] = Field(None, description="Education group (required for secondary/higher secondary)")
-    
     institute_name: str = Field(..., min_length=1, max_length=255, description="Name of educational institute")
     board_name: str = Field(..., min_length=1, max_length=100, description="Name of board (e.g., BISE Lahore, Federal Board)")
     roll_number: str = Field(..., min_length=1, max_length=50, description="Roll number")
     year_of_passing: int = Field(..., ge=1980, le=2030, description="Year of passing")
-    
     total_marks: int = Field(..., gt=0, description="Total marks")
     obtained_marks: int = Field(..., gt=0, description="Obtained marks")
     grade: Optional[str] = Field(None, max_length=10, description="Grade (e.g., A+, A, B)")
-    
-    # Document (S3 URL)
-    result_card_url: str = Field(..., description="URL to result card/certificate scan")
-    
-    @field_validator('obtained_marks')
+
+    @field_validator("obtained_marks")
     @classmethod
     def validate_obtained_marks(cls, v: int, info) -> int:
-        """Validate that obtained marks don't exceed total marks"""
-        total_marks = info.data.get('total_marks')
+        total_marks = info.data.get("total_marks")
         if total_marks and v > total_marks:
-            raise ValueError(f'Obtained marks ({v}) cannot exceed total marks ({total_marks})')
+            raise ValueError(f"Obtained marks ({v}) cannot exceed total marks ({total_marks})")
         return v
+
+
+class AcademicRecordForUploadUrls(AcademicRecordBase):
+    """Academic record for upload-urls request (no result_card_url)."""
+
+
+class AcademicRecordSubmit(AcademicRecordBase):
+    """Academic record information for application submission (includes result card URL)."""
+    result_card_url: str = Field(..., description="URL to result card/certificate scan")
 
 
 class AppliedProgramSubmit(BaseModel):
@@ -159,21 +146,46 @@ class AppliedProgramSubmit(BaseModel):
     quota_id: UUID = Field(..., description="Quota ID to apply under")
 
 
+# ---------- Upload URLs (request: same as submit but without document URL fields) ----------
+
+class ApplicationUploadUrlsRequest(BaseModel):
+    """Request for presigned upload URLs (same as submit payload minus document URLs)."""
+    student_profile: StudentProfileForUploadUrls = Field(...)
+    guardian: GuardianSubmit = Field(...)
+    academic_record: AcademicRecordForUploadUrls = Field(...)
+    applied_programs: List[AppliedProgramSubmit] = Field(..., min_length=1)
+
+
+class UploadUrlItem(BaseModel):
+    """Single document: presigned PUT URL and final object URL."""
+    upload_url: str = Field(..., description="Presigned URL for PUT upload")
+    object_url: str = Field(..., description="Permanent URL of the object after upload")
+
+
+class ApplicationUploadUrlsResponse(BaseModel):
+    """Response: upload token and presigned URLs for the three documents."""
+    upload_token: str = Field(..., description="Token to send with submit request")
+    profile_picture: UploadUrlItem = Field(...)
+    identity_document: UploadUrlItem = Field(...)
+    academic_result_card: UploadUrlItem = Field(...)
+
+
 class ApplicationSubmitRequest(BaseModel):
-    """Complete application submission request"""
-    
+    """Complete application submission request (includes upload_token from upload-urls step)."""
+    upload_token: str = Field(..., min_length=1, description="Token from POST /application/upload-urls")
     student_profile: StudentProfileSubmit = Field(..., description="Student profile data")
     guardian: GuardianSubmit = Field(..., description="Guardian information")
     academic_record: AcademicRecordSubmit = Field(..., description="Academic record (Matric for now)")
     applied_programs: List[AppliedProgramSubmit] = Field(
-        ..., 
+        ...,
         min_length=1,
-        description="List of programs to apply to (at least one required)"
+        description="List of programs to apply to (at least one required)",
     )
     
     class Config:
         json_schema_extra = {
             "example": {
+                "upload_token": "token-from-post-application-upload-urls",
                 "student_profile": {
                     "first_name": "Ahmed",
                     "last_name": "Khan",

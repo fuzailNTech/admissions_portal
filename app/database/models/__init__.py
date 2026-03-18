@@ -39,6 +39,7 @@ from app.database.models.application import (
     ApplicationLogActionType,
     ApplicationLogHistory,
     ApplicationNumberSequence,
+    UploadToken,
     DocumentType,
 )
 
@@ -83,4 +84,5 @@ __all__ = [
     "ApplicationLogActionType",
     "ApplicationLogHistory",
     "ApplicationNumberSequence",
+    "UploadToken",
 ]

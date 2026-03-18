@@ -25,3 +25,11 @@ MAIL_SSL_TLS = os.getenv("MAIL_SSL_TLS") == "True"
 # Use Postmark HTTP API instead of SMTP (avoids port 587 block on Render/Heroku).
 # When True, MAIL_PASSWORD is used as the Postmark API token (same value as for SMTP).
 MAIL_USE_API = os.getenv("MAIL_USE_API", "false").lower() in ("true", "1", "yes")
+
+# S3 / object storage (documents, media)
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
+AWS_REGION = os.getenv("AWS_REGION")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+# Optional: custom endpoint (e.g. LocalStack, MinIO)
+S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL") or None
