@@ -84,6 +84,14 @@ class StudentProfileBase(BaseModel):
 
 class StudentProfileForUploadUrls(StudentProfileBase):
     """Student profile for upload-urls request (no document URLs)."""
+    profile_picture_content_type: str = Field(
+        ...,
+        description="MIME type for profile picture PUT (must match Content-Type on upload; used in presigned URL)",
+    )
+    identity_document_content_type: str = Field(
+        ...,
+        description="MIME type for identity document PUT",
+    )
 
 
 class StudentProfileSubmit(StudentProfileBase):
@@ -130,6 +138,10 @@ class AcademicRecordBase(BaseModel):
 
 class AcademicRecordForUploadUrls(AcademicRecordBase):
     """Academic record for upload-urls request (no result_card_url)."""
+    result_card_content_type: str = Field(
+        ...,
+        description="MIME type for result card PUT",
+    )
 
 
 class AcademicRecordSubmit(AcademicRecordBase):
@@ -157,9 +169,13 @@ class ApplicationUploadUrlsRequest(BaseModel):
 
 
 class UploadUrlItem(BaseModel):
-    """Single document: presigned PUT URL and final object URL."""
+    """Single document: presigned PUT URL, object URL, and Content-Type for the PUT request."""
     upload_url: str = Field(..., description="Presigned URL for PUT upload")
     object_url: str = Field(..., description="Permanent URL of the object after upload")
+    content_type: str = Field(
+        ...,
+        description="Send this exact value as the Content-Type header on PUT (must match presigned signature)",
+    )
 
 
 class ApplicationUploadUrlsResponse(BaseModel):

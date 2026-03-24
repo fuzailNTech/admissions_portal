@@ -2,14 +2,16 @@
 Minimal S3 client for document/media storage.
 Uses app.settings for bucket, region, and optional credentials.
 """
+
 import urllib.parse
 import boto3
 from app import settings
+from botocore.config import Config
 
 
 def get_client():
     """Return a boto3 S3 client with current settings."""
-    kwargs = {"region_name": settings.AWS_REGION}
+    kwargs = {"region_name": settings.AWS_REGION, "config": Config(signature_version="s3v4")}
     if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
         kwargs["aws_access_key_id"] = settings.AWS_ACCESS_KEY_ID
         kwargs["aws_secret_access_key"] = settings.AWS_SECRET_ACCESS_KEY
@@ -23,13 +25,20 @@ def get_bucket():
     return settings.S3_BUCKET_NAME
 
 
-def generate_presigned_put(key: str, expires_in: int = 3600) -> str:
-    """Return a presigned URL for PUTting an object to the given key."""
+def generate_presigned_put(
+    key: str, expires_in: int = 3600, content_type: str | None = None
+) -> str:
+    """Return a presigned URL for PUTting an object to the given key.
+    If content_type is set, the client must send that exact Content-Type header when uploading.
+    """
     client = get_client()
     bucket = get_bucket()
+    params: dict = {"Bucket": bucket, "Key": key}
+    if content_type:
+        params["ContentType"] = content_type
     return client.generate_presigned_url(
         "put_object",
-        Params={"Bucket": bucket, "Key": key},
+        Params=params,
         ExpiresIn=expires_in,
     )
 

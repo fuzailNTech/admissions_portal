@@ -357,19 +357,25 @@ def get_upload_urls(
         "identity_document": f"{prefix}/identity_document.jpg",
         "academic_result_card": f"{prefix}/academic_result_card.pdf",
     }
+    pp_ct = body.student_profile.profile_picture_content_type
+    id_ct = body.student_profile.identity_document_content_type
+    rc_ct = body.academic_record.result_card_content_type
     return ApplicationUploadUrlsResponse(
         upload_token=token_str,
         profile_picture=UploadUrlItem(
-            upload_url=s3_module.generate_presigned_put(keys["profile_picture"]),
+            upload_url=s3_module.generate_presigned_put(keys["profile_picture"], content_type=pp_ct),
             object_url=s3_module.object_url(keys["profile_picture"]),
+            content_type=pp_ct,
         ),
         identity_document=UploadUrlItem(
-            upload_url=s3_module.generate_presigned_put(keys["identity_document"]),
+            upload_url=s3_module.generate_presigned_put(keys["identity_document"], content_type=id_ct),
             object_url=s3_module.object_url(keys["identity_document"]),
+            content_type=id_ct,
         ),
         academic_result_card=UploadUrlItem(
-            upload_url=s3_module.generate_presigned_put(keys["academic_result_card"]),
+            upload_url=s3_module.generate_presigned_put(keys["academic_result_card"], content_type=rc_ct),
             object_url=s3_module.object_url(keys["academic_result_card"]),
+            content_type=rc_ct,
         ),
     )
 
