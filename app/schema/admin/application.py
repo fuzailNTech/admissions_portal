@@ -151,13 +151,12 @@ class ApplicationDetailResponse(BaseModel):
 # ==================== APPLICATION DOCUMENTS ====================
 
 
-class ApplicationDocumentItem(BaseModel):
-    """Single application document for list response."""
+class ApplicationDocumentListItem(BaseModel):
+    """Single application document for list response (no file URL)."""
     id: UUID
     document_type: DocumentType
     document_name: str
     description: Optional[str] = None
-    file_url: Optional[str] = None
     file_name: Optional[str] = None
     file_size_bytes: Optional[int] = None
     mime_type: Optional[str] = None
@@ -172,6 +171,11 @@ class ApplicationDocumentItem(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ApplicationDocumentItem(ApplicationDocumentListItem):
+    """Single application document detail response (includes file URL)."""
+    file_url: Optional[str] = None
 
 
 class DocumentRequestCreate(BaseModel):

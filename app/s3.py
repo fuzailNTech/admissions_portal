@@ -43,6 +43,17 @@ def generate_presigned_put(
     )
 
 
+def generate_presigned_get(key: str, expires_in: int = 300) -> str:
+    """Return a presigned URL for GETting an object by key."""
+    client = get_client()
+    bucket = get_bucket()
+    return client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": bucket, "Key": key},
+        ExpiresIn=expires_in,
+    )
+
+
 def object_url(key: str) -> str:
     """Return the permanent URL for an object (for storing in DB / sending to client)."""
     bucket = get_bucket()
@@ -50,6 +61,37 @@ def object_url(key: str) -> str:
         base = settings.S3_ENDPOINT_URL.rstrip("/")
         return f"{base}/{bucket}/{urllib.parse.quote(key, safe='/')}"
     return f"https://{bucket}.s3.{settings.AWS_REGION}.amazonaws.com/{urllib.parse.quote(key, safe='/')}"
+
+
+def key_from_object_url_or_key(value: str | None) -> str | None:
+    """
+    Normalize a stored S3 reference into an object key.
+    Accepts either:
+    - raw key (preferred), e.g. students/<id>/profile/profile.png
+    - full object URL, e.g. https://bucket.s3.region.amazonaws.com/students/<id>/...
+    """
+    if value is None:
+        return None
+    raw = value.strip()
+    if not raw:
+        return None
+    if "://" not in raw:
+        return raw
+
+    parsed = urllib.parse.urlparse(raw)
+    path = urllib.parse.unquote(parsed.path or "").lstrip("/")
+    bucket = get_bucket()
+    if path.startswith(f"{bucket}/"):
+        return path[len(bucket) + 1 :]
+    return path
+
+
+def build_presigned_get_from_object_url_or_key(value: str | None, expires_in: int = 300) -> str | None:
+    """Build presigned GET URL from either a stored key or stored object URL."""
+    key = key_from_object_url_or_key(value)
+    if key is None:
+        return None
+    return generate_presigned_get(key, expires_in=expires_in)
 
 
 def copy_object(source_key: str, dest_key: str) -> None:

@@ -59,6 +59,8 @@ from app.schema.student.application import (
     StudentAcademicRecordDetail,
     DocumentRequestItem,
     DocumentRequestListResponse,
+    DocumentRequestUploadUrlsRequest,
+    DocumentRequestUploadUrlsResponse,
     DocumentRequestUploadRequest,
     StudentCommentCreate,
     StudentCommentItem,
@@ -328,7 +330,7 @@ STUDENTS_PREFIX = "students"
 
 
 @application_router.post(
-    "/upload-urls",
+    "/submit/upload-urls",
     response_model=ApplicationUploadUrlsResponse,
     status_code=status.HTTP_200_OK,
     summary="Get presigned upload URLs for application documents",
@@ -464,7 +466,7 @@ def list_my_applications(
             program_name = app.preferred_program_cycle.program.name
         all_docs = app.documents or []
         uploaded_documents = [_doc_to_request_item(d) for d in all_docs if d.file_url is not None]
-        requested_uploads = [_doc_to_request_item(d) for d in all_docs if d.file_url is None]
+        requested_uploads = [_doc_to_request_item(d) for d in all_docs if d.requested_by is not None and d.file_url is None]
         items.append(
             StudentApplicationListItem(
                 id=app.id,
@@ -647,7 +649,7 @@ def get_my_application(
             uploaded_at=d.uploaded_at,
             file_url=d.file_url,
         )
-        for d in all_docs if d.requested_by is None
+        for d in all_docs if d.file_url is not None
     ]
     requested_uploads = [
         DocumentRequestItem(
@@ -660,7 +662,7 @@ def get_my_application(
             uploaded_at=d.uploaded_at,
             file_url=d.file_url,
         )
-        for d in all_docs if d.requested_by is not None and not d.file_url
+        for d in all_docs if d.requested_by is not None and d.file_url is None
     ]
     program_name = None
     if app.preferred_program_cycle and app.preferred_program_cycle.program:
@@ -806,9 +808,8 @@ def upload_document_request(
     db: Session = Depends(get_db),
 ):
     """
-    Resolve a document request by providing the document URL (upload).
+    Resolve a document request by providing upload_token + pending document URL.
     Only allowed for documents that were requested by staff (requested_by is set).
-    For now the client passes the file URL; S3 upload flow can be added later.
     """
     _get_application_for_student(application_id, student, db)
     doc = (
@@ -823,10 +824,23 @@ def upload_document_request(
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document request not found")
 
-    doc.file_url = body.file_url.strip()
+    now_utc = datetime.now(timezone.utc)
+    upload_token_row = db.query(UploadToken).filter(UploadToken.token == body.upload_token).first()
+    if not upload_token_row or upload_token_row.expires_at < now_utc or upload_token_row.used_at:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired upload token")
+    pending_prefix = f"{UPLOAD_PENDING_PREFIX}/{body.upload_token}"
+    expected_pending_url = s3_module.object_url(f"{pending_prefix}/requested_document.pdf")
+    if body.file_url.strip() != expected_pending_url:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid document URL for this upload token")
+
+    final_key = f"{SUBMITTED_PREFIX}/{application_id}/requested/{document_id}/document.pdf"
+    s3_module.copy_object(f"{pending_prefix}/requested_document.pdf", final_key)
+    doc.file_url = final_key
     doc.uploaded_at = datetime.now(timezone.utc)
     doc.uploaded_by = student.user_id
     doc.verification_status = VerificationStatus.PENDING
+    upload_token_row.used_at = now_utc
+    db.add(upload_token_row)
     db.add(doc)
     db.add(
         ApplicationLogHistory(
@@ -864,6 +878,10 @@ def upload_document_request(
             db.add(app)
     db.commit()
     db.refresh(doc)
+    try:
+        s3_module.delete_objects([f"{pending_prefix}/requested_document.pdf"])
+    except Exception:
+        pass
 
     return DocumentRequestItem(
         id=doc.id,
@@ -874,6 +892,103 @@ def upload_document_request(
         verification_status=doc.verification_status,
         uploaded_at=doc.uploaded_at,
         file_url=doc.file_url,
+    )
+
+
+@application_router.get(
+    "/{application_id}/documents/{document_id}",
+    response_model=DocumentRequestItem,
+    summary="Get one application document with presigned view URL",
+)
+def get_application_document(
+    application_id: UUID,
+    document_id: UUID,
+    student: StudentProfile = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    """
+    Return one application document for the authenticated student.
+    The file_url in response is a short-lived presigned GET URL.
+    """
+    _get_application_for_student(application_id, student, db)
+    doc = (
+        db.query(ApplicationDocument)
+        .filter(
+            ApplicationDocument.id == document_id,
+            ApplicationDocument.application_id == application_id,
+        )
+        .first()
+    )
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    if not doc.file_url:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document file not uploaded yet")
+
+    presigned_view_url = s3_module.build_presigned_get_from_object_url_or_key(doc.file_url, expires_in=300)
+    if not presigned_view_url:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to generate document view URL",
+        )
+
+    return DocumentRequestItem(
+        id=doc.id,
+        document_type=doc.document_type.value,
+        document_name=doc.document_name,
+        description=doc.description,
+        requested_at=doc.requested_at,
+        verification_status=doc.verification_status,
+        uploaded_at=doc.uploaded_at,
+        file_url=presigned_view_url,
+    )
+
+
+@application_router.post(
+    "/{application_id}/documents/{document_id}/upload-urls",
+    response_model=DocumentRequestUploadUrlsResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get presigned upload URL for requested document",
+)
+def get_document_request_upload_urls(
+    application_id: UUID,
+    document_id: UUID,
+    body: DocumentRequestUploadUrlsRequest,
+    student: StudentProfile = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    """
+    Return upload_token and one presigned PUT URL for a specific requested document.
+    The returned object_url must be sent back to PATCH /documents/{document_id}.
+    """
+    if not s3_module.get_bucket():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Document upload is not configured")
+    _get_application_for_student(application_id, student, db)
+    doc = (
+        db.query(ApplicationDocument)
+        .filter(
+            ApplicationDocument.id == document_id,
+            ApplicationDocument.application_id == application_id,
+            ApplicationDocument.requested_by.isnot(None),
+        )
+        .first()
+    )
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document request not found")
+
+    token_str = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    upload_token = UploadToken(token=token_str, expires_at=expires_at)
+    db.add(upload_token)
+    db.commit()
+
+    key = f"{UPLOAD_PENDING_PREFIX}/{token_str}/requested_document.pdf"
+    return DocumentRequestUploadUrlsResponse(
+        upload_token=token_str,
+        document=UploadUrlItem(
+            upload_url=s3_module.generate_presigned_put(key, content_type=body.content_type),
+            object_url=s3_module.object_url(key),
+            content_type=body.content_type,
+        ),
     )
 
 
@@ -1080,8 +1195,8 @@ def submit_student_application(
                 student_prefix = f"{STUDENTS_PREFIX}/{profile.id}"
                 s3_module.copy_object(f"{pending_prefix}/profile_picture.jpg", f"{student_prefix}/profile/profile.png")
                 s3_module.copy_object(f"{pending_prefix}/identity_document.jpg", f"{student_prefix}/identity/document.jpg")
-                profile.profile_picture_url = s3_module.object_url(f"{student_prefix}/profile/profile.png")
-                profile.identity_doc_url = s3_module.object_url(f"{student_prefix}/identity/document.jpg")
+                profile.profile_picture_url = f"{student_prefix}/profile/profile.png"
+                profile.identity_doc_url = f"{student_prefix}/identity/document.jpg"
 
                 # Create guardian
                 guardian = StudentGuardian(
@@ -1115,7 +1230,7 @@ def submit_student_application(
                 db.flush()
 
                 s3_module.copy_object(f"{pending_prefix}/academic_result_card.pdf", f"{student_prefix}/academic/{academic_record.id}/result_card.pdf")
-                academic_record.result_card_url = s3_module.object_url(f"{student_prefix}/academic/{academic_record.id}/result_card.pdf")
+                academic_record.result_card_url = f"{student_prefix}/academic/{academic_record.id}/result_card.pdf"
 
                 existing_profile = profile
             
@@ -1132,9 +1247,9 @@ def submit_student_application(
                 s3_module.copy_object(f"{pending_prefix}/profile_picture.jpg", f"{submitted_prefix}/profile_picture.jpg")
                 s3_module.copy_object(f"{pending_prefix}/identity_document.jpg", f"{submitted_prefix}/identity_document.jpg")
                 s3_module.copy_object(f"{pending_prefix}/academic_result_card.pdf", f"{submitted_prefix}/academic_result_card.pdf")
-                final_profile_url = s3_module.object_url(f"{submitted_prefix}/profile_picture.jpg")
-                final_identity_url = s3_module.object_url(f"{submitted_prefix}/identity_document.jpg")
-                final_result_url = s3_module.object_url(f"{submitted_prefix}/academic_result_card.pdf")
+                final_profile_url = f"{submitted_prefix}/profile_picture.jpg"
+                final_identity_url = f"{submitted_prefix}/identity_document.jpg"
+                final_result_url = f"{submitted_prefix}/academic_result_card.pdf"
 
                 application_number = generate_application_number(
                     db=db,

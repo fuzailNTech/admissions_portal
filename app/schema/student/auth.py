@@ -178,7 +178,61 @@ class AcademicRecordUpdate(BaseModel):
 
 
 class StudentMeUpdateRequest(BaseModel):
-    """Request body for PATCH /me. Only provided sections are updated. Guardian/academic_record include id to identify which entity to update."""
+    """Request body for PATCH /me. Only provided sections are updated."""
     student_profile: Optional[StudentProfileUpdate] = None
     guardian: Optional[GuardianUpdate] = None
     academic_record: Optional[AcademicRecordUpdate] = None
+    upload_token: Optional[str] = Field(
+        None,
+        min_length=1,
+        description="Required when updating any document URL fields below",
+    )
+    profile_picture_url: Optional[str] = Field(
+        None,
+        description="Pending object URL from POST /auth/me/documents/upload-urls for profile picture",
+    )
+    identity_doc_url: Optional[str] = Field(
+        None,
+        description="Pending object URL from POST /auth/me/documents/upload-urls for identity document",
+    )
+    result_card_url: Optional[str] = Field(
+        None,
+        description="Pending object URL from POST /auth/me/documents/upload-urls for secondary result card",
+    )
+
+
+# ==================== Upload URLs for profile documents ====================
+
+
+class StudentDocumentsUploadUrlsRequest(BaseModel):
+    """Request presigned upload URLs for student profile documents."""
+    profile_picture_content_type: str = Field(
+        ...,
+        description="MIME type for profile picture PUT",
+    )
+    identity_document_content_type: str = Field(
+        ...,
+        description="MIME type for identity document PUT",
+    )
+    result_card_content_type: str = Field(
+        ...,
+        description="MIME type for result card PUT",
+    )
+
+
+class UploadUrlItem(BaseModel):
+    """Single document upload URL details."""
+    upload_url: str = Field(..., description="Presigned URL for PUT upload")
+    object_url: str = Field(..., description="Permanent URL of the object after upload")
+    content_type: str = Field(
+        ...,
+        description="Send this exact value as the Content-Type header on PUT",
+    )
+
+
+class StudentDocumentsUploadUrlsResponse(BaseModel):
+    """Presigned upload URLs for student profile documents."""
+    upload_token: str = Field(..., description="Token to bind these uploads to a later documents update call")
+    profile_picture: UploadUrlItem = Field(...)
+    identity_document: UploadUrlItem = Field(...)
+    academic_result_card: UploadUrlItem = Field(...)

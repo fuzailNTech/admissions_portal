@@ -380,7 +380,6 @@ class DocumentRequestItem(BaseModel):
     requested_at: Optional[datetime] = None
     verification_status: VerificationStatus
     uploaded_at: Optional[datetime] = None
-    file_url: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -391,9 +390,25 @@ class DocumentRequestListResponse(BaseModel):
     items: List[DocumentRequestItem] = Field(..., description="Pending document requests")
 
 
+class DocumentRequestUploadUrlsRequest(BaseModel):
+    """Request presigned upload URL for a requested document."""
+    content_type: str = Field(
+        ...,
+        min_length=1,
+        description="MIME type for requested document PUT",
+    )
+
+
+class DocumentRequestUploadUrlsResponse(BaseModel):
+    """Response for requested-document upload URL."""
+    upload_token: str = Field(..., description="Token to bind upload with PATCH update")
+    document: UploadUrlItem = Field(...)
+
+
 class DocumentRequestUploadRequest(BaseModel):
-    """Body to resolve a document request by uploading (client passes URL; S3 later)."""
-    file_url: str = Field(..., min_length=1, max_length=500, description="URL of the uploaded document")
+    """Body to resolve a document request by uploading via upload token."""
+    upload_token: str = Field(..., min_length=1, description="Token from upload-urls endpoint")
+    file_url: str = Field(..., min_length=1, max_length=500, description="Pending object URL returned from upload-urls endpoint")
 
 
 # ==================== COMMENTS (MERGED STAFF + STUDENT, SAME PATTERN AS ADMIN) ====================

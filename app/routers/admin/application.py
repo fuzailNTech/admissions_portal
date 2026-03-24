@@ -43,6 +43,7 @@ from app.schema.admin.application import (
     GuardianDetail,
     AcademicRecordDetail,
     ApplicationCommentItem,
+    ApplicationDocumentListItem,
     ApplicationDocumentItem,
     StaffCommentCreate,
     DocumentRequestCreate,
@@ -50,6 +51,7 @@ from app.schema.admin.application import (
     WorkflowStepItem,
 )
 from app.bpm.user_task_handlers.config import run_user_task_handler
+from app import s3 as s3_module
 from app.utils.auth import require_admin_staff, get_accessible_campuses
 from app.utils.engine import complete_user_task_and_persist
 
@@ -307,7 +309,7 @@ def get_application(
 
 @application_router.get(
     "/{application_id}/documents",
-    response_model=List[ApplicationDocumentItem],
+    response_model=List[ApplicationDocumentListItem],
     summary="List application documents (admin)",
 )
 def list_application_documents(
@@ -328,7 +330,49 @@ def list_application_documents(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
     if not _can_access_application(app, current_staff, db):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
-    return [ApplicationDocumentItem.model_validate(d) for d in (app.documents or [])]
+    return [ApplicationDocumentListItem.model_validate(d) for d in (app.documents or [])]
+
+
+@application_router.get(
+    "/{application_id}/documents/{document_id}",
+    response_model=ApplicationDocumentItem,
+    summary="Get one application document (admin)",
+)
+def get_application_document(
+    application_id: UUID,
+    document_id: UUID,
+    current_staff: StaffProfile = Depends(require_admin_staff),
+    db: Session = Depends(get_db),
+):
+    """
+    Fetch one document for an application with a short-lived presigned view URL.
+    """
+    doc = (
+        db.query(ApplicationDocument)
+        .options(joinedload(ApplicationDocument.application))
+        .filter(
+            ApplicationDocument.application_id == application_id,
+            ApplicationDocument.id == document_id,
+        )
+        .first()
+    )
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    if not _can_access_application(doc.application, current_staff, db):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    data = ApplicationDocumentItem.model_validate(doc).model_dump()
+    if doc.file_url:
+        presigned_view_url = s3_module.build_presigned_get_from_object_url_or_key(doc.file_url, expires_in=300)
+        if not presigned_view_url:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Unable to generate document view URL",
+            )
+        data["file_url"] = presigned_view_url
+    else:
+        data["file_url"] = None
+    return ApplicationDocumentItem.model_validate(data)
 
 
 @application_router.get(
