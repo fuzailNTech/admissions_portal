@@ -12,6 +12,19 @@ class AdminUpdatePasswordRequest(BaseModel):
     new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
 
 
+class AdminForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class AdminResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=1, description="Reset token received via email")
+    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+
+
+class PasswordResetMessageResponse(BaseModel):
+    message: str = "If the account exists, password reset instructions have been sent."
+
+
 class AdminLoginRequest(BaseModel):
     """Admin login request."""
     email: EmailStr
@@ -49,7 +62,6 @@ class AdminMeResponse(BaseModel):
     """Current admin (staff) user information."""
     user_id: UUID
     email: str
-    is_active: bool
     verified: bool
     last_login: Optional[datetime]
     created_at: datetime

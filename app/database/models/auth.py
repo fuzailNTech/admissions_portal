@@ -58,6 +58,11 @@ class User(Base):
         uselist=False,
         cascade="all, delete-orphan"
     )
+    password_reset_tokens = relationship(
+        "PasswordResetToken",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
 
 class StaffProfile(Base):
@@ -156,5 +161,31 @@ class StaffCampus(Base):
         Index("ix_staff_campus_active", "staff_profile_id", "is_active"),
         Index("ix_campus_staff_active", "campus_id", "is_active"),
     )
+
+
+class PasswordResetToken(Base):
+    """One-time password reset token."""
+
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    token_hash = Column(String(64), nullable=False, unique=True, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    used_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    user = relationship("User", back_populates="password_reset_tokens")
 
 

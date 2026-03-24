@@ -1,15 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import hashlib
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone, timedelta
 import secrets
 
 from app.database.config.db import get_db
-from app.database.models.auth import User
+from app.database.models.auth import User, PasswordResetToken
 from app.database.models.student import StudentProfile, StudentGuardian, StudentAcademicRecord, AcademicLevel
 from app.database.models.application import UploadToken
 from app.schema.student.auth import (
+    PasswordResetMessageResponse,
+    StudentForgotPasswordRequest,
     StudentLoginRequest,
     StudentLoginResponse,
+    StudentResetPasswordRequest,
     StudentUpdatePasswordRequest,
     StudentMeResponse,
     StudentProfileMe,
@@ -27,9 +31,113 @@ from app.utils.auth import (
     create_access_token,
     get_current_student,
 )
+from app.settings import PASSWORD_RESET_TOKEN_EXPIRE_MINUTES, STUDENT_PORTAL_URL
+from app.utils.smtp import send_mail
 
 student_auth_router = APIRouter(prefix="/auth", tags=["Student - Auth"])
 ME_DOCUMENT_VIEW_TTL_SECONDS = 900
+
+
+def _hash_reset_token(raw_token: str) -> str:
+    return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+
+
+@student_auth_router.post("/forgot-password", response_model=PasswordResetMessageResponse)
+def forgot_password(
+    body: StudentForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    generic_response = PasswordResetMessageResponse()
+    student_profile = (
+        db.query(StudentProfile)
+        .filter(StudentProfile.identity_doc_number == body.identity_doc_number.strip())
+        .first()
+    )
+    if not student_profile:
+        return generic_response
+
+    user = db.query(User).filter(User.id == student_profile.user_id).first()
+    if not user:
+        return generic_response
+
+    recipient_email = (student_profile.primary_email or user.email or "").strip()
+    if not recipient_email:
+        return generic_response
+
+    now_utc = datetime.now(timezone.utc)
+    db.query(PasswordResetToken).filter(
+        PasswordResetToken.user_id == user.id,
+        PasswordResetToken.used_at.is_(None),
+    ).update({PasswordResetToken.used_at: now_utc}, synchronize_session=False)
+
+    raw_token = secrets.token_urlsafe(32)
+    reset_token = PasswordResetToken(
+        user_id=user.id,
+        token_hash=_hash_reset_token(raw_token),
+        expires_at=now_utc + timedelta(minutes=PASSWORD_RESET_TOKEN_EXPIRE_MINUTES),
+    )
+    db.add(reset_token)
+    db.commit()
+
+    reset_link = f"{STUDENT_PORTAL_URL}/reset-password?token={raw_token}" if STUDENT_PORTAL_URL else ""
+    action_html = (
+        f"<p><a href='{reset_link}'>Reset your password</a></p>"
+        if reset_link
+        else "<p>Reset link is currently unavailable. Please contact support.</p>"
+    )
+    body_html = (
+        "<p>We received a password reset request for your student account.</p>"
+        + action_html
+        + f"<p>This token will expire in {PASSWORD_RESET_TOKEN_EXPIRE_MINUTES} minutes.</p>"
+    )
+    background_tasks.add_task(
+        send_mail,
+        recipient_email,
+        "Student password reset",
+        body_html,
+    )
+    return generic_response
+
+
+@student_auth_router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
+def reset_password(
+    body: StudentResetPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    now_utc = datetime.now(timezone.utc)
+    token_hash = _hash_reset_token(body.token)
+    reset_token = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token_hash == token_hash
+    ).first()
+    if (
+        not reset_token
+        or reset_token.used_at is not None
+        or reset_token.expires_at < now_utc
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+
+    student_profile = db.query(StudentProfile).filter(StudentProfile.user_id == reset_token.user_id).first()
+    if not student_profile:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid reset token",
+        )
+
+    user = db.query(User).filter(User.id == reset_token.user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid reset token",
+        )
+
+    user.password_hash = get_password_hash(body.new_password)
+    user.is_temporary_password = False
+    reset_token.used_at = now_utc
+    db.commit()
 
 
 @student_auth_router.post("/login", response_model=StudentLoginResponse)

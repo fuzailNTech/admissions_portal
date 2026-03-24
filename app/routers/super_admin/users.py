@@ -38,7 +38,7 @@ def create_user(
         last_name=request.last_name,
         password_hash=get_password_hash(password),
         is_temporary_password=True,
-        verified=False,
+        verified=True,
         is_super_admin=request.is_super_admin,
         is_active=True,
     )

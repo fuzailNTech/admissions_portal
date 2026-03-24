@@ -11,6 +11,11 @@ BPMN_DIR = os.path.join(BASE_DIR, "bpm", "workflows")
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
 JWT_ALGORITHM = "HS256"
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 30 * 24 * 60  # 30 days
+PASSWORD_RESET_TOKEN_EXPIRE_MINUTES = int(
+    os.getenv("PASSWORD_RESET_TOKEN_EXPIRE_MINUTES", "15")
+)
+ADMIN_PORTAL_URL = os.getenv("ADMIN_PORTAL_URL", "").rstrip("/")
+STUDENT_PORTAL_URL = os.getenv("STUDENT_PORTAL_URL", "").rstrip("/")
 
 
 MAIL_USERNAME = os.getenv("MAIL_USERNAME")

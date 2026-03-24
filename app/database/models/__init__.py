@@ -1,6 +1,12 @@
 # Import models in dependency order
 from app.database.models.institute import Institute, Campus, Program, CampusProgram
-from app.database.models.auth import User, StaffProfile, StaffCampus, StaffRoleType
+from app.database.models.auth import (
+    User,
+    StaffProfile,
+    StaffCampus,
+    StaffRoleType,
+    PasswordResetToken,
+)
 from app.database.models.student import (
     StudentProfile,
     StudentGuardian,
@@ -52,6 +58,7 @@ __all__ = [
     "StaffProfile",
     "StaffCampus",
     "StaffRoleType",
+    "PasswordResetToken",
     "StudentProfile",
     "StudentGuardian",
     "StudentAcademicRecord",

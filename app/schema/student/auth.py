@@ -20,6 +20,19 @@ class StudentUpdatePasswordRequest(BaseModel):
     new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
 
 
+class StudentForgotPasswordRequest(BaseModel):
+    identity_doc_number: str = Field(..., min_length=1, description="CNIC or B-Form number")
+
+
+class StudentResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=1, description="Reset token received via email")
+    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+
+
+class PasswordResetMessageResponse(BaseModel):
+    message: str = "If the account exists, password reset instructions have been sent."
+
+
 class StudentLoginRequest(BaseModel):
     """Student login request (identity document number + password)."""
     identity_doc_number: str = Field(..., min_length=1, description="CNIC or B-Form number")
