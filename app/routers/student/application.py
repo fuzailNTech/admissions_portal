@@ -58,6 +58,7 @@ from app.schema.student.application import (
     StudentGuardianDetail,
     StudentAcademicRecordDetail,
     DocumentRequestItem,
+    DocumentRequestDetailItem,
     DocumentRequestListResponse,
     DocumentRequestUploadUrlsRequest,
     DocumentRequestUploadUrlsResponse,
@@ -647,7 +648,6 @@ def get_my_application(
             requested_at=d.requested_at,
             verification_status=d.verification_status,
             uploaded_at=d.uploaded_at,
-            file_url=d.file_url,
         )
         for d in all_docs if d.file_url is not None
     ]
@@ -660,7 +660,6 @@ def get_my_application(
             requested_at=d.requested_at,
             verification_status=d.verification_status,
             uploaded_at=d.uploaded_at,
-            file_url=d.file_url,
         )
         for d in all_docs if d.requested_by is not None and d.file_url is None
     ]
@@ -797,7 +796,7 @@ def _get_application_for_student(
 
 @application_router.patch(
     "/{application_id}/documents/{document_id}",
-    response_model=DocumentRequestItem,
+    response_model=DocumentRequestDetailItem,
     summary="Resolve document request by uploading",
 )
 def upload_document_request(
@@ -883,7 +882,7 @@ def upload_document_request(
     except Exception:
         pass
 
-    return DocumentRequestItem(
+    return DocumentRequestDetailItem(
         id=doc.id,
         document_type=doc.document_type.value,
         document_name=doc.document_name,
@@ -897,7 +896,7 @@ def upload_document_request(
 
 @application_router.get(
     "/{application_id}/documents/{document_id}",
-    response_model=DocumentRequestItem,
+    response_model=DocumentRequestDetailItem,
     summary="Get one application document with presigned view URL",
 )
 def get_application_document(
@@ -931,7 +930,7 @@ def get_application_document(
             detail="Unable to generate document view URL",
         )
 
-    return DocumentRequestItem(
+    return DocumentRequestDetailItem(
         id=doc.id,
         document_type=doc.document_type.value,
         document_name=doc.document_name,

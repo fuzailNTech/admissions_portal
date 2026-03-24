@@ -385,6 +385,11 @@ class DocumentRequestItem(BaseModel):
         from_attributes = True
 
 
+class DocumentRequestDetailItem(DocumentRequestItem):
+    """Detailed document request item including file URL."""
+    file_url: str
+
+
 class DocumentRequestListResponse(BaseModel):
     """List of pending document requests for an application."""
     items: List[DocumentRequestItem] = Field(..., description="Pending document requests")
