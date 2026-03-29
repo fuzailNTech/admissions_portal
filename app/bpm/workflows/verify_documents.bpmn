@@ -15,18 +15,18 @@
       <bpmn:incoming>Flow_1lxnx5q</bpmn:incoming>
       <bpmn:outgoing>Flow_0p19ybz</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:exclusiveGateway id="verify_documents_v1.verification_status" name="Verification Status" default="Flow_0k285bg">
+    <bpmn:exclusiveGateway id="verify_documents_v1.verification_status_gw" name="Verification Status" default="Flow_0k285bg">
       <bpmn:incoming>Flow_0p19ybz</bpmn:incoming>
       <bpmn:outgoing>Flow_0k285bg</bpmn:outgoing>
       <bpmn:outgoing>Flow_0k2l5at</bpmn:outgoing>
       <bpmn:outgoing>Flow_09bkiwk</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="Flow_0p19ybz" sourceRef="verify_documents_v1.verify_documents" targetRef="verify_documents_v1.verification_status" />
-    <bpmn:sequenceFlow id="Flow_0k285bg" sourceRef="verify_documents_v1.verification_status" targetRef="verify_documents_v1.succeeded" />
-    <bpmn:sequenceFlow id="Flow_0k2l5at" sourceRef="verify_documents_v1.verification_status" targetRef="verify_documents_v1.failed">
+    <bpmn:sequenceFlow id="Flow_0p19ybz" sourceRef="verify_documents_v1.verify_documents" targetRef="verify_documents_v1.verification_status_gw" />
+    <bpmn:sequenceFlow id="Flow_0k285bg" sourceRef="verify_documents_v1.verification_status_gw" targetRef="verify_documents_v1.succeeded" />
+    <bpmn:sequenceFlow id="Flow_0k2l5at" sourceRef="verify_documents_v1.verification_status_gw" targetRef="verify_documents_v1.failed">
       <bpmn:conditionExpression>verification_status=="rejected"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_09bkiwk" sourceRef="verify_documents_v1.verification_status" targetRef="verify_documents_v1.request_reupload">
+    <bpmn:sequenceFlow id="Flow_09bkiwk" sourceRef="verify_documents_v1.verification_status_gw" targetRef="verify_documents_v1.request_reupload">
       <bpmn:conditionExpression>verification_status=="reupload_required"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:serviceTask id="verify_documents_v1.request_reupload" name="Request Reupload">
@@ -73,7 +73,7 @@
       <bpmndi:BPMNShape id="Activity_0idlpn1_di" bpmnElement="verify_documents_v1.verify_documents">
         <dc:Bounds x="430" y="137" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_0kxknt7_di" bpmnElement="verify_documents_v1.verification_status" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="Gateway_0kxknt7_di" bpmnElement="verify_documents_v1.verification_status_gw" isMarkerVisible="true">
         <dc:Bounds x="595" y="152" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="592" y="115" width="56" height="27" />

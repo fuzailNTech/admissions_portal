@@ -1351,6 +1351,7 @@ def submit_student_application(
                         document_type=DocumentType.PROFILE_PICTURE,
                         document_name="Profile picture",
                         file_url=final_profile_url,
+                        verification_status=VerificationStatus.APPROVED,
                     )
                 )
                 db.add(
@@ -1359,6 +1360,7 @@ def submit_student_application(
                         document_type=DocumentType.IDENTITY_DOCUMENT,
                         document_name="Identity document",
                         file_url=final_identity_url,
+                        verification_status=VerificationStatus.APPROVED,
                     )
                 )
                 db.add(
@@ -1367,6 +1369,7 @@ def submit_student_application(
                         document_type=DocumentType.ACADEMIC_RESULT_CARD,
                         document_name=f"Result card ({request.academic_record.level.value})",
                         file_url=final_result_url,
+                        verification_status=VerificationStatus.APPROVED,
                     )
                 )
 

@@ -152,6 +152,8 @@ def filter_exclusive_gateway_tasks(wf: BpmnWorkflow, gateway_task, ready_tasks: 
         gateway_task: The completed gateway task
         ready_tasks: List of tasks that became READY after the gateway
     """
+
+    print(f"  Exclusive gateway filter: ready_tasks = {ready_tasks!r}")
     if len(ready_tasks) <= 1:
         # Only one path taken - this is correct behavior
         return

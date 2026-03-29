@@ -15,20 +15,20 @@
       <bpmn:incoming>Flow_0wic1xw</bpmn:incoming>
       <bpmn:outgoing>Flow_06yqaib</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:exclusiveGateway id="admission_decision_v1.decision_route" name="Decision Route" default="Flow_18u0nz8">
+    <bpmn:exclusiveGateway id="admission_decision_v1.decision_gw" name="Decision Route" default="Flow_18u0nz8">
       <bpmn:incoming>Flow_06yqaib</bpmn:incoming>
       <bpmn:outgoing>Flow_1wklh8f</bpmn:outgoing>
       <bpmn:outgoing>Flow_1vd0502</bpmn:outgoing>
       <bpmn:outgoing>Flow_18u0nz8</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="Flow_06yqaib" sourceRef="admission_decision_v1.decide_admission_status" targetRef="admission_decision_v1.decision_route" />
-    <bpmn:sequenceFlow id="Flow_1wklh8f" sourceRef="admission_decision_v1.decision_route" targetRef="admission_decision_v1.offered">
+    <bpmn:sequenceFlow id="Flow_06yqaib" sourceRef="admission_decision_v1.decide_admission_status" targetRef="admission_decision_v1.decision_gw" />
+    <bpmn:sequenceFlow id="Flow_1wklh8f" sourceRef="admission_decision_v1.decision_gw" targetRef="admission_decision_v1.offered">
       <bpmn:conditionExpression>decision=="offered"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_1vd0502" sourceRef="admission_decision_v1.decision_route" targetRef="admission_decision_v1.rejected">
+    <bpmn:sequenceFlow id="Flow_1vd0502" sourceRef="admission_decision_v1.decision_gw" targetRef="admission_decision_v1.rejected">
       <bpmn:conditionExpression>decision=="rejected"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_18u0nz8" sourceRef="admission_decision_v1.decision_route" targetRef="admission_decision_v1.on_hold">
+    <bpmn:sequenceFlow id="Flow_18u0nz8" sourceRef="admission_decision_v1.decision_gw" targetRef="admission_decision_v1.on_hold">
       <bpmn:conditionExpression>decision=="on_hold"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:serviceTask id="admission_decision_v1.offered" name="Offered">
@@ -77,7 +77,7 @@
         <dc:Bounds x="430" y="137" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_1wipdn9_di" bpmnElement="admission_decision_v1.decision_route" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="Gateway_1wipdn9_di" bpmnElement="admission_decision_v1.decision_gw" isMarkerVisible="true">
         <dc:Bounds x="595" y="152" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="581" y="128" width="77" height="14" />
