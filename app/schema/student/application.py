@@ -390,11 +390,6 @@ class DocumentRequestDetailItem(DocumentRequestItem):
     file_url: str
 
 
-class DocumentRequestListResponse(BaseModel):
-    """List of pending document requests for an application."""
-    items: List[DocumentRequestItem] = Field(..., description="Pending document requests")
-
-
 class DocumentRequestUploadUrlsRequest(BaseModel):
     """Request presigned upload URL for a requested document."""
     content_type: str = Field(

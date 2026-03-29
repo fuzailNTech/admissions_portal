@@ -158,6 +158,11 @@ class Campus(Base):
     staff_assignments = relationship("StaffCampus", back_populates="campus", cascade="all, delete-orphan")
     campus_programs = relationship("CampusProgram", back_populates="campus", cascade="all, delete-orphan")
     campus_admission_cycles = relationship("CampusAdmissionCycle", back_populates="campus", cascade="all, delete-orphan")
+    visit_slots = relationship(
+        "CampusVisitSlot",
+        back_populates="campus",
+        cascade="all, delete-orphan",
+    )
 
 
 class Program(Base):

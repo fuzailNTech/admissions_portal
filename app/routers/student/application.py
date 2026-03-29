@@ -59,7 +59,6 @@ from app.schema.student.application import (
     StudentAcademicRecordDetail,
     DocumentRequestItem,
     DocumentRequestDetailItem,
-    DocumentRequestListResponse,
     DocumentRequestUploadUrlsRequest,
     DocumentRequestUploadUrlsResponse,
     DocumentRequestUploadRequest,

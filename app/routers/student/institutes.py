@@ -1,4 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from collections import defaultdict
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Query
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_, or_
 from uuid import UUID
@@ -6,6 +10,12 @@ from typing import Optional, List
 
 from app.database.config.db import get_db
 from app.database.models.institute import Institute, Campus, Program, CampusProgram, InstituteStatus
+from app.database.models.campus_visit import (
+    CampusVisitBooking,
+    CampusVisitBookingStatus,
+    CampusVisitSlot,
+    CampusVisitSlotStatus,
+)
 from app.database.models.admission import (
     CampusAdmissionCycle,
     ProgramAdmissionCycle,
@@ -25,7 +35,15 @@ from app.schema.student.institutes import (
     QuotaDetail,
     CustomFormFieldDetail,
 )
+from app.schema.student.campus_visit import (
+    CampusVisitBookRequest,
+    CampusVisitBookResponse,
+    CampusVisitSlotPublic,
+    CampusWithVisitSlots,
+    InstituteCampusVisitSlotsResponse,
+)
 from app.utils.admission import get_active_cycle
+from app.utils.campus_visit_email import send_campus_visit_booking_confirmation_email
 
 institute_router = APIRouter(
     prefix="/institutes",
@@ -154,6 +172,7 @@ def list_institutes(
         institutes_data.append(institute_data)
 
     return InstituteListResponse(total=total, institutes=institutes_data)
+
 
 
 @institute_router.get("/{institute_id}", response_model=InstituteDetailedInfo)
@@ -403,4 +422,219 @@ def get_institute_details(
         website_url=institute.website_url,
         active_cycle=active_cycle_detail,
         programs=programs_data,
+    )
+
+
+
+
+
+@institute_router.get(
+    "/{institute_id}/campus-visits/slots",
+    response_model=InstituteCampusVisitSlotsResponse,
+    summary="List bookable campus visit slots by campus",
+)
+def get_institute_campus_visit_slots(
+    institute_id: UUID,
+    campus_type: Optional[List[str]] = Query(None, description="Filter by campus type(s)"),
+    province_state: Optional[List[str]] = Query(None, description="Filter by province(s)/state(s)"),
+    city: Optional[List[str]] = Query(None, description="Filter by city/cities (partial match)"),
+    db: Session = Depends(get_db),
+):
+    """
+    Published visit slots that are still in the future and have remaining capacity,
+    grouped by campus. Without filters, all active campuses of the institute are included
+    (with possibly empty `slots`). With filters, only matching campuses are returned.
+    """
+    institute = (
+        db.query(Institute)
+        .filter(Institute.id == institute_id, Institute.status == InstituteStatus.ACTIVE.value)
+        .first()
+    )
+    if not institute:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Institute not found or not active",
+        )
+
+    campus_query = db.query(Campus).filter(
+        Campus.institute_id == institute_id,
+        Campus.is_active == True,
+    )
+    if campus_type:
+        campus_query = campus_query.filter(Campus.campus_type.in_(campus_type))
+    if province_state:
+        campus_query = campus_query.filter(Campus.province_state.in_(province_state))
+    if city:
+        city_conditions = [Campus.city.ilike(f"%{c.strip()}%") for c in city]
+        campus_query = campus_query.filter(or_(*city_conditions))
+
+    campuses = campus_query.order_by(Campus.name).all()
+    campus_ids = [c.id for c in campuses]
+
+    now = datetime.now(timezone.utc)
+    slots_by_campus: dict = defaultdict(list)
+    if campus_ids:
+        raw_slots = (
+            db.query(CampusVisitSlot)
+            .filter(
+                CampusVisitSlot.campus_id.in_(campus_ids),
+                CampusVisitSlot.status == CampusVisitSlotStatus.PUBLISHED,
+                CampusVisitSlot.starts_at > now,
+            )
+            .order_by(CampusVisitSlot.starts_at.asc())
+            .all()
+        )
+        for slot in raw_slots:
+            filled = slot.filled(db)
+            remaining = slot.capacity - filled
+            if remaining <= 0:
+                continue
+            slots_by_campus[slot.campus_id].append(
+                CampusVisitSlotPublic(
+                    id=slot.id,
+                    starts_at=slot.starts_at,
+                    ends_at=slot.ends_at,
+                    title=slot.title,
+                    remaining=remaining,
+                )
+            )
+
+    campuses_out = [
+        CampusWithVisitSlots(
+            id=c.id,
+            name=c.name,
+            campus_type=c.campus_type,
+            city=c.city,
+            slots=slots_by_campus[c.id],
+        )
+        for c in campuses
+    ]
+
+    return InstituteCampusVisitSlotsResponse(
+        institute_id=institute.id,
+        institute_name=institute.name,
+        campuses=campuses_out,
+    )
+
+
+@institute_router.post(
+    "/{institute_id}/campus-visits/book",
+    response_model=CampusVisitBookResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Book a campus visit slot",
+)
+def book_campus_visit_slot(
+    institute_id: UUID,
+    body: CampusVisitBookRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """
+    Create a booking for a published slot that still has capacity.
+    Public endpoint; no authentication required.
+    Confirmation email is sent in the background after the response is returned.
+    """
+    institute = (
+        db.query(Institute)
+        .filter(Institute.id == institute_id, Institute.status == InstituteStatus.ACTIVE.value)
+        .first()
+    )
+    if not institute:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Institute not found or not active",
+        )
+
+    email_normalized = str(body.email).strip().lower()
+    phone_normalized = body.phone.strip()
+
+    slot = (
+        db.query(CampusVisitSlot)
+        .filter(CampusVisitSlot.id == body.slot_id)
+        .with_for_update()
+        .first()
+    )
+    if not slot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Visit slot not found",
+        )
+
+    campus = db.query(Campus).filter(Campus.id == slot.campus_id).first()
+    if not campus or campus.institute_id != institute_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Visit slot not found",
+        )
+    if not campus.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This campus is not available for visits",
+        )
+
+    now = datetime.now(timezone.utc)
+    if slot.status != CampusVisitSlotStatus.PUBLISHED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This visit slot is not open for booking",
+        )
+    if slot.starts_at <= now:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This visit slot is no longer available",
+        )
+    if slot.remaining(db) <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This visit slot is fully booked",
+        )
+
+    booking = CampusVisitBooking(
+        slot_id=slot.id,
+        user_id=None,
+        visitor_name=body.visitor_name.strip(),
+        visitor_email=email_normalized,
+        visitor_phone=phone_normalized,
+        status=CampusVisitBookingStatus.BOOKED,
+    )
+    db.add(booking)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A booking for this email already exists for this slot",
+        )
+    db.refresh(booking)
+
+    background_tasks.add_task(
+        send_campus_visit_booking_confirmation_email,
+        to_email=email_normalized,
+        visitor_name=body.visitor_name.strip(),
+        institute_name=institute.name,
+        campus_name=campus.name,
+        campus_timezone=campus.timezone,
+        slot_title=slot.title,
+        starts_at=slot.starts_at,
+        ends_at=slot.ends_at,
+        booking_id=booking.id,
+    )
+
+    slot_public = CampusVisitSlotPublic(
+        id=slot.id,
+        starts_at=slot.starts_at,
+        ends_at=slot.ends_at,
+        title=slot.title,
+        remaining=slot.remaining(db),
+    )
+    return CampusVisitBookResponse(
+        id=booking.id,
+        slot_id=booking.slot_id,
+        visitor_name=booking.visitor_name,
+        visitor_email=booking.visitor_email,
+        visitor_phone=booking.visitor_phone,
+        status=booking.status,
+        created_at=booking.created_at,
+        slot=slot_public,
     )

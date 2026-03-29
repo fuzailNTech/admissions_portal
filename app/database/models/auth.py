@@ -63,6 +63,10 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    campus_visit_bookings = relationship(
+        "CampusVisitBooking",
+        back_populates="user",
+    )
 
 
 class StaffProfile(Base):

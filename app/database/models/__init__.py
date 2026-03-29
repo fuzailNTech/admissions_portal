@@ -48,6 +48,12 @@ from app.database.models.application import (
     UploadToken,
     DocumentType,
 )
+from app.database.models.campus_visit import (
+    CampusVisitSlot,
+    CampusVisitBooking,
+    CampusVisitSlotStatus,
+    CampusVisitBookingStatus,
+)
 
 __all__ = [
     "Institute",
@@ -92,4 +98,8 @@ __all__ = [
     "ApplicationLogHistory",
     "ApplicationNumberSequence",
     "UploadToken",
+    "CampusVisitSlot",
+    "CampusVisitBooking",
+    "CampusVisitSlotStatus",
+    "CampusVisitBookingStatus",
 ]
