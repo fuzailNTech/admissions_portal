@@ -148,6 +148,28 @@ class ApplicationDetailResponse(BaseModel):
         from_attributes = True
 
 
+# ==================== APPLICATION LOG HISTORY ====================
+
+
+class ApplicationLogChangedByUser(BaseModel):
+    """Actor who performed the logged action (when not system)."""
+    id: UUID
+    email: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+
+
+class ApplicationLogHistoryItem(BaseModel):
+    """One audit row from application_log_history."""
+    id: UUID
+    application_id: UUID
+    action_type: str
+    details: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+    performed_by: Optional[ApplicationLogChangedByUser] = None
+    created_at: datetime
+
+
 # ==================== APPLICATION DOCUMENTS ====================
 
 

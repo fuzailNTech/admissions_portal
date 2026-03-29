@@ -32,12 +32,14 @@ from app.database.models.application import (
     StudentComment,
     VerificationStatus,
 )
-from app.database.models.auth import StaffProfile, StaffRoleType
+from app.database.models.auth import StaffProfile, StaffRoleType, User
 from app.database.models.workflow import WorkflowInstance, WorkflowInstanceStep, WorkflowStepStatus
 from app.schema.admin.application import (
     ApplicationDetailResponse,
     ApplicationListItem,
     ApplicationListStudentSummary,
+    ApplicationLogChangedByUser,
+    ApplicationLogHistoryItem,
     CompleteTaskRequest,
     PaginatedApplicationListResponse,
     GuardianDetail,
@@ -305,6 +307,59 @@ def get_application(
         guardians=guardians,
         academic_records=academic_records,
     )
+
+
+@application_router.get(
+    "/{application_id}/logs",
+    response_model=List[ApplicationLogHistoryItem],
+    summary="List application audit log (admin)",
+)
+def list_application_logs(
+    application_id: UUID,
+    current_staff: StaffProfile = Depends(require_admin_staff),
+    db: Session = Depends(get_db),
+):
+    """
+    All audit rows for this application (status changes, assignments, documents, comments, etc.), oldest first.
+    `performed_by` is null for system actions; otherwise includes basic user fields.
+    """
+    app = (
+        db.query(Application)
+        .options(
+            joinedload(Application.log_history).joinedload(ApplicationLogHistory.changer),
+        )
+        .filter(Application.id == application_id)
+        .first()
+    )
+    if not app:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+    if not _can_access_application(app, current_staff, db):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+
+    rows = sorted(app.log_history or [], key=lambda h: h.created_at)
+    items: List[ApplicationLogHistoryItem] = []
+    for h in rows:
+        changer: Optional[User] = h.changer
+        performed_by = None
+        if changer is not None:
+            performed_by = ApplicationLogChangedByUser(
+                id=changer.id,
+                email=changer.email,
+                first_name=changer.first_name,
+                last_name=changer.last_name,
+            )
+        items.append(
+            ApplicationLogHistoryItem(
+                id=h.id,
+                application_id=h.application_id,
+                action_type=h.action_type,
+                details=h.details,
+                metadata=h.metadata_,
+                performed_by=performed_by,
+                created_at=h.created_at,
+            )
+        )
+    return items
 
 
 @application_router.get(

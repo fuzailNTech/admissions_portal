@@ -149,27 +149,11 @@ def handle_auto_assign(
         context["assigned_to_email"] = assignee_email
         workflow_data["assigned_to_id"] = str(eligible.id)
         workflow_data["no_assignee_available"] = False
-        db.add(
-            ApplicationLogHistory(
-                application_id=application.id,
-                action_type=ApplicationLogActionType.APPLICATION_ASSIGNED,
-                details=f"Assigned to {assignee_name}",
-                changed_by=None,
-            )
-        )
     else:
         context["assigned_to_name"] = None
         context["assigned_to_email"] = None
         workflow_data["assigned_to_id"] = None
         workflow_data["no_assignee_available"] = True
-        db.add(
-            ApplicationLogHistory(
-                application_id=application.id,
-                action_type=ApplicationLogActionType.APPLICATION_ASSIGNED,
-                details="No eligible assignee; application unassigned",
-                changed_by=None,
-            )
-        )
 
 
 def _assignment_notification_body(assignee_name: str, application_number: str) -> str:
@@ -264,12 +248,26 @@ def handle_post_context(
                 old_status = application.status
                 from_status = getattr(old_status, "value", str(old_status))
                 application.status = ApplicationStatus.SUBMITTED.value
+                assigned_to_email = context.get("assigned_to_email")
+                no_assignee = workflow_data.get("no_assignee_available", True)
+                if assigned_to_email:
+                    assign_details = f"Application assigned to {assigned_to_email}"
+                elif not no_assignee:
+                    assign_name = context.get("assigned_to_name")
+                    assign_details = (
+                        f"Application assigned to {assign_name}" if assign_name else "Application assigned"
+                    )
+                else:
+                    assign_details = "Assignment step completed; no eligible assignee"
+                meta = {"from_status": from_status, "to_status": ApplicationStatus.SUBMITTED.value}
+                if assigned_to_email:
+                    meta["assigned_to_email"] = assigned_to_email
                 db.add(
                     ApplicationLogHistory(
                         application_id=application.id,
-                        action_type=ApplicationLogActionType.STATUS_CHANGE,
-                        details=f"Status changed from {from_status} to submitted assign completed",
-                        metadata_={"from_status": from_status, "to_status": ApplicationStatus.SUBMITTED.value},
+                        action_type=ApplicationLogActionType.APPLICATION_ASSIGNED,
+                        details=assign_details,
+                        metadata_=meta,
                         changed_by=None,
                     )
                 )
