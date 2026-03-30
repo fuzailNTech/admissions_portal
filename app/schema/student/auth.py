@@ -88,7 +88,6 @@ class StudentProfileMe(BaseModel):
     province: ProvinceType
     postal_code: Optional[str] = None
     domicile_province: ProvinceType
-    domicile_district: str
     profile_picture_url: str
     identity_doc_url: str
     created_at: Optional[datetime] = None
@@ -176,7 +175,6 @@ class StudentProfileUpdate(BaseModel):
     province: Optional[ProvinceType] = None
     postal_code: Optional[str] = Field(None, max_length=10)
     domicile_province: Optional[ProvinceType] = None
-    domicile_district: Optional[str] = Field(None, min_length=1, max_length=100)
 
 
 class GuardianUpdate(BaseModel):

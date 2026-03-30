@@ -169,6 +169,7 @@ def list_applications(
                 status=app.status.value,
                 submitted_at=app.submitted_at,
                 last_updated_at=app.last_updated_at,
+                offer_expires_at=app.offer_expires_at,
                 student=ApplicationListStudentSummary(
                     first_name=snapshot.first_name,
                     last_name=snapshot.last_name,
@@ -303,7 +304,6 @@ def get_application(
         province=snap.province,
         postal_code=snap.postal_code,
         domicile_province=snap.domicile_province,
-        domicile_district=snap.domicile_district,
         guardians=guardians,
         academic_records=academic_records,
     )

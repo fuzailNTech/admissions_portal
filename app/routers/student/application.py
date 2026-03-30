@@ -46,6 +46,7 @@ from app.schema.student.application import (
     ApplicationResponse,
     ApplicationSubmitRequest,
     ApplicationSubmitResponse,
+    AcceptOfferResponse,
     ApplicationUploadUrlsRequest,
     ApplicationUploadUrlsResponse,
     UploadUrlItem,
@@ -473,6 +474,7 @@ def list_my_applications(
                 application_number=app.application_number,
                 status=_student_status(app.status),
                 submitted_at=app.submitted_at,
+                offer_expires_at=app.offer_expires_at,
                 institute_name=app.institute.name if app.institute else None,
                 program_name=program_name,
                 campus_name=app.preferred_campus.name if app.preferred_campus else None,
@@ -571,6 +573,104 @@ def track_my_applications(
         _build_track_response(app, log_by_app.get(app.id, []))
         for app in applications
     ]
+
+
+def _accept_offer_confirmation_email_body(student_name: str, application_number: str) -> str:
+    """HTML body confirming the student accepted the admission offer."""
+    return f"""
+    <p>Dear {student_name or 'Applicant'},</p>
+    <p>This email confirms that you have <strong>accepted</strong> your admission offer.</p>
+    <p><strong>Application number:</strong> {application_number or 'N/A'}</p>
+    <p>Thank you. The admissions team will follow up with any next steps through the portal where applicable.</p>
+    <p>Best regards,<br/>Admissions Team</p>
+    """
+
+
+@application_router.post(
+    "/{application_id}/accept-offer",
+    response_model=AcceptOfferResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Accept admission offer",
+)
+def accept_admission_offer(
+    application_id: UUID,
+    background_tasks: BackgroundTasks,
+    student: StudentProfile = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    """
+    Accept the admission offer for this application when its status is **offered**.
+
+    Updates status to **accepted**, records a status change in the application log, and sends a confirmation email to the applicant.
+    If an offer expiry time is set and has passed, the request is rejected.
+    """
+    app = (
+        db.query(Application)
+        .options(joinedload(Application.snapshot))
+        .filter(Application.id == application_id, Application.student_profile_id == student.id)
+        .first()
+    )
+    if not app:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+
+    if app.status != ApplicationStatus.OFFERED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only applications with status offered can accept the admission offer.",
+        )
+
+    now_utc = datetime.now(timezone.utc)
+    if app.offer_expires_at is not None:
+        exp = app.offer_expires_at
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        if now_utc > exp:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This offer has expired and can no longer be accepted.",
+            )
+
+    old_status = app.status
+    from_status = getattr(old_status, "value", str(old_status))
+    to_status = ApplicationStatus.ACCEPTED.value
+    app.status = ApplicationStatus.ACCEPTED
+    app.last_updated_at = now_utc
+    db.add(
+        ApplicationLogHistory(
+            application_id=app.id,
+            action_type=ApplicationLogActionType.STATUS_CHANGE,
+            details=f"Offer accepted by applicant; status changed from {from_status} to {to_status}",
+            metadata_={"from_status": from_status, "to_status": to_status},
+            changed_by=student.user_id,
+        )
+    )
+    db.commit()
+
+    snap = app.snapshot
+    student_name = ""
+    if snap:
+        student_name = f"{snap.first_name or ''} {snap.last_name or ''}".strip()
+    recipient = (snap.primary_email if snap else None) or ""
+    recipient = recipient.strip()
+    if not recipient:
+        login_user = db.query(User).filter(User.id == student.user_id).first()
+        if login_user and login_user.email:
+            recipient = login_user.email.strip()
+    if recipient:
+        subject = "[Admissions Portal] Offer accepted – confirmation"
+        body_html = _accept_offer_confirmation_email_body(student_name, app.application_number)
+        background_tasks.add_task(
+            send_mail,
+            recipient,
+            subject,
+            body_html,
+        )
+
+    return AcceptOfferResponse(
+        message="You have successfully accepted the offer. A confirmation has been sent to your email."
+        if recipient
+        else "You have successfully accepted the offer."
+    )
 
 
 @application_router.get(
@@ -698,7 +798,6 @@ def get_my_application(
         province=snap.province,
         postal_code=snap.postal_code,
         domicile_province=snap.domicile_province,
-        domicile_district=snap.domicile_district,
         guardians=guardians,
         academic_records=academic_records,
         uploaded_documents=uploaded_documents,
@@ -1183,7 +1282,6 @@ def submit_student_application(
                     province=request.student_profile.province,
                     postal_code=request.student_profile.postal_code,
                     domicile_province=request.student_profile.domicile_province,
-                    domicile_district=request.student_profile.domicile_district,
                     profile_picture_url="",  # set below after copy
                     identity_doc_url="",  # set below after copy
                 )
@@ -1278,7 +1376,6 @@ def submit_student_application(
                     province=request.student_profile.province.value,
                     postal_code=request.student_profile.postal_code,
                     domicile_province=request.student_profile.domicile_province.value,
-                    domicile_district=request.student_profile.domicile_district,
                     profile_picture_url=final_profile_url,
                     identity_doc_url=final_identity_url,
                 )

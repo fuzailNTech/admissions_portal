@@ -67,7 +67,6 @@ class StudentProfileBase(BaseModel):
     province: ProvinceType = Field(..., description="Province")
     postal_code: Optional[str] = Field(None, max_length=10, description="Postal code")
     domicile_province: ProvinceType = Field(..., description="Domicile province")
-    domicile_district: str = Field(..., min_length=1, max_length=100, description="Domicile district")
 
     @field_validator("identity_doc_number")
     @classmethod
@@ -223,7 +222,6 @@ class ApplicationSubmitRequest(BaseModel):
                     "province": "islamabad_capital_territory",
                     "postal_code": "44000",
                     "domicile_province": "punjab",
-                    "domicile_district": "Rawalpindi",
                     "profile_picture_url": "https://s3.amazonaws.com/bucket/profile.jpg",
                     "identity_doc_url": "https://s3.amazonaws.com/bucket/cnic.jpg"
                 },
@@ -272,6 +270,19 @@ class ApplicationSubmitResponse(BaseModel):
         }
 
 
+class AcceptOfferResponse(BaseModel):
+    """Response after the student accepts an admission offer."""
+
+    message: str = Field(..., description="Success message")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "You have successfully accepted the offer. A confirmation has been sent to your email.",
+            }
+        }
+
+
 # ==================== STUDENT APPLICATION LIST & DETAIL (MY APPLICATIONS) ====================
 
 
@@ -293,6 +304,7 @@ class StudentApplicationListItem(BaseModel):
     application_number: str
     status: StudentApplicationStatus
     submitted_at: datetime
+    offer_expires_at: Optional[datetime] = None
     institute_name: Optional[str] = None
     program_name: Optional[str] = None
     campus_name: Optional[str] = None
@@ -480,7 +492,6 @@ class StudentApplicationDetailResponse(BaseModel):
     province: str
     postal_code: Optional[str] = None
     domicile_province: str
-    domicile_district: str
     # Related (student-visible)
     guardians: List[StudentGuardianDetail] = Field(default_factory=list)
     academic_records: List[StudentAcademicRecordDetail] = Field(default_factory=list)

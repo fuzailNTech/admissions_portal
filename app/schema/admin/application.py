@@ -27,6 +27,7 @@ class ApplicationListItem(BaseModel):
     status: str
     submitted_at: datetime
     last_updated_at: Optional[datetime] = None
+    offer_expires_at: Optional[datetime] = None
     # Student (from student_profile)
     student: ApplicationListStudentSummary
     # Target
@@ -139,7 +140,6 @@ class ApplicationDetailResponse(BaseModel):
     province: str
     postal_code: Optional[str] = None
     domicile_province: str
-    domicile_district: str
     # Related lists (use default_factory so Swagger/OpenAPI resolve schema)
     guardians: List[GuardianDetail] = Field(default_factory=list)
     academic_records: List[AcademicRecordDetail] = Field(default_factory=list)

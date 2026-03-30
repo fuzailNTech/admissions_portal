@@ -147,7 +147,6 @@ class StudentProfile(Base):
         nullable=False,
         index=True
     )
-    domicile_district = Column(String(100), nullable=False)
     
     # ==================== DOCUMENTS (S3 URLs) ====================
     # Universal documents only (nullable until uploaded)
@@ -176,7 +175,6 @@ class StudentProfile(Base):
         Index('ix_student_profile_user_id', 'user_id'),
         Index('ix_student_profile_cnic', 'identity_doc_number'),
         Index('ix_student_profile_location', 'city', 'province'),
-        Index('ix_student_profile_domicile', 'domicile_province', 'domicile_district'),
     )
 
 

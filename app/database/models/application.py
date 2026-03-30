@@ -232,7 +232,6 @@ class ApplicationSnapshot(Base):
     postal_code = Column(String(10), nullable=True)
     
     domicile_province = Column(String(50), nullable=False)
-    domicile_district = Column(String(100), nullable=False)
     
     # Documents (S3 URLs - application-specific copies)
     profile_picture_url = Column(String(500), nullable=False)
