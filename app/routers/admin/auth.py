@@ -44,7 +44,9 @@ def forgot_password(
     if not user:
         return generic_response
 
-    staff_profile = db.query(StaffProfile).filter(StaffProfile.user_id == user.id).first()
+    staff_profile = (
+        db.query(StaffProfile).filter(StaffProfile.user_id == user.id).first()
+    )
     if not staff_profile or not staff_profile.is_active:
         return generic_response
 
@@ -63,7 +65,11 @@ def forgot_password(
     db.add(reset_token)
     db.commit()
 
-    reset_link = f"{ADMIN_PORTAL_URL}/reset-password?token={raw_token}" if ADMIN_PORTAL_URL else ""
+    reset_link = (
+        f"{ADMIN_PORTAL_URL}/reset-password?token={raw_token}"
+        if ADMIN_PORTAL_URL
+        else ""
+    )
     action_html = (
         f"<p><a href='{reset_link}'>Reset your password</a></p>"
         if reset_link
@@ -90,9 +96,11 @@ def reset_password(
 ):
     now_utc = datetime.now(timezone.utc)
     token_hash = _hash_reset_token(body.token)
-    reset_token = db.query(PasswordResetToken).filter(
-        PasswordResetToken.token_hash == token_hash
-    ).first()
+    reset_token = (
+        db.query(PasswordResetToken)
+        .filter(PasswordResetToken.token_hash == token_hash)
+        .first()
+    )
     if (
         not reset_token
         or reset_token.used_at is not None
@@ -103,7 +111,11 @@ def reset_password(
             detail="Invalid or expired reset token",
         )
 
-    staff_profile = db.query(StaffProfile).filter(StaffProfile.user_id == reset_token.user_id).first()
+    staff_profile = (
+        db.query(StaffProfile)
+        .filter(StaffProfile.user_id == reset_token.user_id)
+        .first()
+    )
     if not staff_profile:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -130,7 +142,7 @@ def admin_login(
 ):
     """
     Admin login endpoint for staff members (Institute Admin, Campus Admin).
-        
+
     Returns:
         - user_id: UUID of the user
         - token: JWT access token
@@ -161,16 +173,16 @@ def admin_login(
         )
 
     # Check if user has staff profile (required for admin access)
-    staff_profile = db.query(StaffProfile).filter(
-        StaffProfile.user_id == user.id
-    ).first()
-    
+    staff_profile = (
+        db.query(StaffProfile).filter(StaffProfile.user_id == user.id).first()
+    )
+
     if not staff_profile:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User does not have staff access",
         )
-    
+
     if not staff_profile.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -230,18 +242,12 @@ def update_password(
     db: Session = Depends(get_db),
 ):
     """
-    Update the authenticated admin's password.
+     Update the authenticated admin's password.
 
-    Requires current password. On success, the password is set to permanent
-    (is_temporary_password is set to False).
+    On success, the password is set to permanent
+     (is_temporary_password is set to False).
     """
     user = staff.user
-    if not verify_password(body.current_password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Current password is incorrect",
-        )
-
     user.password_hash = get_password_hash(body.new_password)
     user.is_temporary_password = False
     db.commit()

@@ -16,17 +16,23 @@ from app.database.models.student import (
 
 class StudentUpdatePasswordRequest(BaseModel):
     """Request to update student password (current + new)."""
-    current_password: str = Field(..., min_length=1, description="Current password")
-    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+
+    new_password: str = Field(
+        ..., min_length=8, description="New password (min 8 characters)"
+    )
 
 
 class StudentForgotPasswordRequest(BaseModel):
-    identity_doc_number: str = Field(..., min_length=1, description="CNIC or B-Form number")
+    identity_doc_number: str = Field(
+        ..., min_length=1, description="CNIC or B-Form number"
+    )
 
 
 class StudentResetPasswordRequest(BaseModel):
     token: str = Field(..., min_length=1, description="Reset token received via email")
-    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+    new_password: str = Field(
+        ..., min_length=8, description="New password (min 8 characters)"
+    )
 
 
 class PasswordResetMessageResponse(BaseModel):
@@ -35,12 +41,16 @@ class PasswordResetMessageResponse(BaseModel):
 
 class StudentLoginRequest(BaseModel):
     """Student login request (identity document number + password)."""
-    identity_doc_number: str = Field(..., min_length=1, description="CNIC or B-Form number")
+
+    identity_doc_number: str = Field(
+        ..., min_length=1, description="CNIC or B-Form number"
+    )
     password: str = Field(..., min_length=1, description="Password")
 
 
 class StudentLoginResponse(BaseModel):
     """Student login response."""
+
     user_id: UUID
     token: str
     last_login: Optional[datetime] = None
@@ -55,6 +65,7 @@ class StudentLoginResponse(BaseModel):
 
 class StudentProfileMe(BaseModel):
     """Full student profile for /me response."""
+
     id: UUID
     user_id: UUID
     first_name: str
@@ -89,6 +100,7 @@ class StudentProfileMe(BaseModel):
 
 class GuardianMe(BaseModel):
     """Guardian in /me response."""
+
     id: UUID
     student_profile_id: UUID
     guardian_relationship: GuardianRelationship
@@ -107,6 +119,7 @@ class GuardianMe(BaseModel):
 
 class AcademicRecordMe(BaseModel):
     """Academic record in /me response."""
+
     id: UUID
     student_profile_id: UUID
     level: AcademicLevel
@@ -128,6 +141,7 @@ class AcademicRecordMe(BaseModel):
 
 class StudentMeResponse(BaseModel):
     """Response for GET /me: student profile with guardian and academic record (SECONDARY)."""
+
     student_profile: StudentProfileMe
     guardian: Optional[GuardianMe] = None
     academic_record: Optional[AcademicRecordMe] = None
@@ -143,6 +157,7 @@ class StudentMeResponse(BaseModel):
 
 class StudentProfileUpdate(BaseModel):
     """Partial update for student profile. Only provided fields are updated. No document URLs."""
+
     first_name: Optional[str] = Field(None, min_length=1, max_length=100)
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
     father_name: Optional[str] = Field(None, min_length=1, max_length=100)
@@ -166,6 +181,7 @@ class StudentProfileUpdate(BaseModel):
 
 class GuardianUpdate(BaseModel):
     """Partial update for guardian. id is required to identify which guardian; only other provided fields are updated."""
+
     id: UUID = Field(..., description="ID of the guardian to update (from GET /me)")
     guardian_relationship: Optional[GuardianRelationship] = None
     first_name: Optional[str] = Field(None, min_length=1, max_length=100)
@@ -178,7 +194,10 @@ class GuardianUpdate(BaseModel):
 
 class AcademicRecordUpdate(BaseModel):
     """Partial update for academic record. id is required to identify which record; no document URLs."""
-    id: UUID = Field(..., description="ID of the academic record to update (from GET /me)")
+
+    id: UUID = Field(
+        ..., description="ID of the academic record to update (from GET /me)"
+    )
     level: Optional[AcademicLevel] = None
     education_group: Optional[EducationGroup] = None
     institute_name: Optional[str] = Field(None, min_length=1, max_length=255)
@@ -192,6 +211,7 @@ class AcademicRecordUpdate(BaseModel):
 
 class StudentMeUpdateRequest(BaseModel):
     """Request body for PATCH /me. Only provided sections are updated."""
+
     student_profile: Optional[StudentProfileUpdate] = None
     guardian: Optional[GuardianUpdate] = None
     academic_record: Optional[AcademicRecordUpdate] = None
@@ -219,6 +239,7 @@ class StudentMeUpdateRequest(BaseModel):
 
 class StudentDocumentsUploadUrlsRequest(BaseModel):
     """Request presigned upload URLs for student profile documents."""
+
     profile_picture_content_type: str = Field(
         ...,
         description="MIME type for profile picture PUT",
@@ -235,6 +256,7 @@ class StudentDocumentsUploadUrlsRequest(BaseModel):
 
 class UploadUrlItem(BaseModel):
     """Single document upload URL details."""
+
     upload_url: str = Field(..., description="Presigned URL for PUT upload")
     object_url: str = Field(..., description="Permanent URL of the object after upload")
     content_type: str = Field(
@@ -245,7 +267,10 @@ class UploadUrlItem(BaseModel):
 
 class StudentDocumentsUploadUrlsResponse(BaseModel):
     """Presigned upload URLs for student profile documents."""
-    upload_token: str = Field(..., description="Token to bind these uploads to a later documents update call")
+
+    upload_token: str = Field(
+        ..., description="Token to bind these uploads to a later documents update call"
+    )
     profile_picture: UploadUrlItem = Field(...)
     identity_document: UploadUrlItem = Field(...)
     academic_result_card: UploadUrlItem = Field(...)

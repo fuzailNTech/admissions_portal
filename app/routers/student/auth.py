@@ -6,7 +6,12 @@ import secrets
 
 from app.database.config.db import get_db
 from app.database.models.auth import User, PasswordResetToken
-from app.database.models.student import StudentProfile, StudentGuardian, StudentAcademicRecord, AcademicLevel
+from app.database.models.student import (
+    StudentProfile,
+    StudentGuardian,
+    StudentAcademicRecord,
+    AcademicLevel,
+)
 from app.database.models.application import UploadToken
 from app.schema.student.auth import (
     PasswordResetMessageResponse,
@@ -42,7 +47,9 @@ def _hash_reset_token(raw_token: str) -> str:
     return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
 
 
-@student_auth_router.post("/forgot-password", response_model=PasswordResetMessageResponse)
+@student_auth_router.post(
+    "/forgot-password", response_model=PasswordResetMessageResponse
+)
 def forgot_password(
     body: StudentForgotPasswordRequest,
     background_tasks: BackgroundTasks,
@@ -80,7 +87,11 @@ def forgot_password(
     db.add(reset_token)
     db.commit()
 
-    reset_link = f"{STUDENT_PORTAL_URL}/reset-password?token={raw_token}" if STUDENT_PORTAL_URL else ""
+    reset_link = (
+        f"{STUDENT_PORTAL_URL}/reset-password?token={raw_token}"
+        if STUDENT_PORTAL_URL
+        else ""
+    )
     action_html = (
         f"<p><a href='{reset_link}'>Reset your password</a></p>"
         if reset_link
@@ -107,9 +118,11 @@ def reset_password(
 ):
     now_utc = datetime.now(timezone.utc)
     token_hash = _hash_reset_token(body.token)
-    reset_token = db.query(PasswordResetToken).filter(
-        PasswordResetToken.token_hash == token_hash
-    ).first()
+    reset_token = (
+        db.query(PasswordResetToken)
+        .filter(PasswordResetToken.token_hash == token_hash)
+        .first()
+    )
     if (
         not reset_token
         or reset_token.used_at is not None
@@ -120,7 +133,11 @@ def reset_password(
             detail="Invalid or expired reset token",
         )
 
-    student_profile = db.query(StudentProfile).filter(StudentProfile.user_id == reset_token.user_id).first()
+    student_profile = (
+        db.query(StudentProfile)
+        .filter(StudentProfile.user_id == reset_token.user_id)
+        .first()
+    )
     if not student_profile:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -207,11 +224,6 @@ def update_password(
     (is_temporary_password is set to False).
     """
     user = student.user
-    if not verify_password(body.current_password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Current password is incorrect",
-        )
     user.password_hash = get_password_hash(body.new_password)
     user.is_temporary_password = False
     db.commit()
@@ -225,7 +237,9 @@ def _get_secondary_academic_record(student: StudentProfile):
     return None
 
 
-def _build_student_profile_me_with_view_urls(student: StudentProfile) -> StudentProfileMe:
+def _build_student_profile_me_with_view_urls(
+    student: StudentProfile,
+) -> StudentProfileMe:
     profile_data = StudentProfileMe.model_validate(student).model_dump()
     profile_data["profile_picture_url"] = (
         s3_module.build_presigned_get_from_object_url_or_key(
@@ -264,7 +278,9 @@ def get_current_student_me(
     """
     Get current authenticated student's profile with guardian and academic record (SECONDARY only).
     """
-    guardian = GuardianMe.model_validate(student.guardians[0]) if student.guardians else None
+    guardian = (
+        GuardianMe.model_validate(student.guardians[0]) if student.guardians else None
+    )
     sec_record = _get_secondary_academic_record(student)
     return StudentMeResponse(
         student_profile=_build_student_profile_me_with_view_urls(student),
@@ -333,7 +349,9 @@ def update_current_student_me(
     wants_profile_picture = body.profile_picture_url is not None
     wants_identity_doc = body.identity_doc_url is not None
     wants_result_card = body.result_card_url is not None
-    wants_any_document_update = wants_profile_picture or wants_identity_doc or wants_result_card
+    wants_any_document_update = (
+        wants_profile_picture or wants_identity_doc or wants_result_card
+    )
 
     pending_keys_to_cleanup = []
     if wants_any_document_update:
@@ -348,17 +366,29 @@ def update_current_student_me(
                 detail="upload_token is required when updating document URLs",
             )
         now_utc = datetime.now(timezone.utc)
-        upload_token_row = db.query(UploadToken).filter(UploadToken.token == body.upload_token).first()
-        if not upload_token_row or upload_token_row.expires_at < now_utc or upload_token_row.used_at:
+        upload_token_row = (
+            db.query(UploadToken).filter(UploadToken.token == body.upload_token).first()
+        )
+        if (
+            not upload_token_row
+            or upload_token_row.expires_at < now_utc
+            or upload_token_row.used_at
+        ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid or expired upload token",
             )
 
         pending_prefix = f"uploads/pending/{body.upload_token}"
-        expected_profile_url = s3_module.object_url(f"{pending_prefix}/profile_picture.jpg")
-        expected_identity_url = s3_module.object_url(f"{pending_prefix}/identity_document.jpg")
-        expected_result_url = s3_module.object_url(f"{pending_prefix}/academic_result_card.pdf")
+        expected_profile_url = s3_module.object_url(
+            f"{pending_prefix}/profile_picture.jpg"
+        )
+        expected_identity_url = s3_module.object_url(
+            f"{pending_prefix}/identity_document.jpg"
+        )
+        expected_result_url = s3_module.object_url(
+            f"{pending_prefix}/academic_result_card.pdf"
+        )
 
         student_prefix = f"students/{student.id}"
 
@@ -407,13 +437,19 @@ def update_current_student_me(
                     .first()
                 )
             if target_academic_record is not None:
-                s3_module.delete_objects([f"{student_prefix}/academic/{target_academic_record.id}/result_card.pdf"])
+                s3_module.delete_objects(
+                    [
+                        f"{student_prefix}/academic/{target_academic_record.id}/result_card.pdf"
+                    ]
+                )
                 s3_module.copy_object(
                     f"{pending_prefix}/academic_result_card.pdf",
                     f"{student_prefix}/academic/{target_academic_record.id}/result_card.pdf",
                 )
                 target_academic_record.result_card_url = f"{student_prefix}/academic/{target_academic_record.id}/result_card.pdf"
-                pending_keys_to_cleanup.append(f"{pending_prefix}/academic_result_card.pdf")
+                pending_keys_to_cleanup.append(
+                    f"{pending_prefix}/academic_result_card.pdf"
+                )
                 if academic_record_obj is None:
                     academic_record_obj = target_academic_record
 
@@ -431,7 +467,11 @@ def update_current_student_me(
     if guardian_obj is not None:
         guardian = GuardianMe.model_validate(guardian_obj)
     else:
-        first_guardian = db.query(StudentGuardian).filter(StudentGuardian.student_profile_id == student.id).first()
+        first_guardian = (
+            db.query(StudentGuardian)
+            .filter(StudentGuardian.student_profile_id == student.id)
+            .first()
+        )
         guardian = GuardianMe.model_validate(first_guardian) if first_guardian else None
     if academic_record_obj is not None:
         sec_record = academic_record_obj

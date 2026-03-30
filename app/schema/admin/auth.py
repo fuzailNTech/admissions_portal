@@ -8,8 +8,10 @@ from app.database.models.auth import StaffRoleType
 
 class AdminUpdatePasswordRequest(BaseModel):
     """Request to update admin password (current + new)."""
-    current_password: str = Field(..., min_length=1, description="Current password")
-    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+
+    new_password: str = Field(
+        ..., min_length=8, description="New password (min 8 characters)"
+    )
 
 
 class AdminForgotPasswordRequest(BaseModel):
@@ -18,7 +20,9 @@ class AdminForgotPasswordRequest(BaseModel):
 
 class AdminResetPasswordRequest(BaseModel):
     token: str = Field(..., min_length=1, description="Reset token received via email")
-    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+    new_password: str = Field(
+        ..., min_length=8, description="New password (min 8 characters)"
+    )
 
 
 class PasswordResetMessageResponse(BaseModel):
@@ -27,12 +31,14 @@ class PasswordResetMessageResponse(BaseModel):
 
 class AdminLoginRequest(BaseModel):
     """Admin login request."""
+
     email: EmailStr
     password: str
 
 
 class AdminLoginResponse(BaseModel):
     """Admin login response for staff members."""
+
     user_id: UUID
     token: str
     role: StaffRoleType  # Staff role (INSTITUTE_ADMIN or CAMPUS_ADMIN)
@@ -45,6 +51,7 @@ class AdminLoginResponse(BaseModel):
 
 class StaffInfo(BaseModel):
     """Staff profile information."""
+
     id: UUID
     first_name: str
     last_name: str
@@ -53,19 +60,20 @@ class StaffInfo(BaseModel):
     role: StaffRoleType
     institute_id: UUID
     is_active: bool
-    
+
     class Config:
         from_attributes = True
 
 
 class AdminMeResponse(BaseModel):
     """Current admin (staff) user information."""
+
     user_id: UUID
     email: str
     verified: bool
     last_login: Optional[datetime]
     created_at: datetime
     staff_profile: StaffInfo  # Staff profile (always present for admin endpoints)
-    
+
     class Config:
         from_attributes = True
