@@ -1,4 +1,5 @@
 """User task handlers for admission_decision_v1 (decide_admission_status, resume_review)."""
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 from sqlalchemy.orm import Session
@@ -10,6 +11,31 @@ DECIDE_ADMISSION_STATUS_TASK_ID = "admission_decision_v1.decide_admission_status
 RESUME_REVIEW_TASK_ID = "admission_decision_v1.resume_review"
 
 VALID_DECISIONS = ("offered", "rejected", "on_hold")
+
+
+def _parse_offer_expires_at(value: Any) -> datetime:
+    """Parse offer expiry timestamp and normalize to timezone-aware UTC datetime."""
+    if value is None:
+        raise ValueError("offer_expires_at is required when decision is 'offered'")
+
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        raw = str(value).strip()
+        if not raw:
+            raise ValueError("offer_expires_at is required when decision is 'offered'")
+        if raw.endswith("Z"):
+            raw = raw[:-1] + "+00:00"
+        try:
+            parsed = datetime.fromisoformat(raw)
+        except ValueError as exc:
+            raise ValueError(
+                "offer_expires_at must be a valid ISO datetime (e.g. 2026-05-01T23:59:59Z)"
+            ) from exc
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def _validate_decide_admission_data(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -25,10 +51,15 @@ def _validate_decide_admission_data(data: Dict[str, Any]) -> Dict[str, Any]:
     decision_notes = data.get("decision_notes")
     if decision_notes is not None and not isinstance(decision_notes, str):
         decision_notes = str(decision_notes)
-    return {
+    normalized = {
         "decision": decision,
         "decision_notes": (decision_notes or "").strip() or None,
     }
+    if decision == "offered":
+        normalized["offer_expires_at"] = _parse_offer_expires_at(
+            data.get("offer_expires_at")
+        ).isoformat()
+    return normalized
 
 
 @register_user_task_handler(DECIDE_ADMISSION_STATUS_TASK_ID)

@@ -26,6 +26,20 @@ from app.utils.smtp import send_mail_sync
 ADMISSION_DECISION_PROCESS_ID = "operation.admission_decision_v1"
 
 
+def _normalize_offer_expires_at(value: object) -> datetime | None:
+    """Convert workflow offer_expires_at value into a timezone-aware datetime."""
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    raw = str(value).strip()
+    if not raw:
+        return None
+    if raw.endswith("Z"):
+        raw = raw[:-1] + "+00:00"
+    return datetime.fromisoformat(raw)
+
+
 def _get_application_from_workflow(workflow_data: dict, db: Session) -> Application:
     """Load Application from workflow_data application_id."""
     application_id_str = workflow_data.get("application_id")
@@ -45,14 +59,17 @@ def _update_application_decision(
     application: Application,
     status: ApplicationStatus,
     decision_notes: str | None,
+    offer_expires_at: datetime | None,
     db: Session,
 ) -> None:
-    """Set application status, decision_notes, last_updated_at and commit."""
+    """Set application status, notes, offer expiry (if provided), last_updated_at and commit."""
     old_status = application.status
     from_status = getattr(old_status, "value", str(old_status))
     to_status = getattr(status, "value", str(status))
     application.status = status
     application.decision_notes = decision_notes
+    if offer_expires_at is not None:
+        application.offer_expires_at = offer_expires_at
     application.last_updated_at = datetime.utcnow()
     db.add(
         ApplicationLogHistory(
@@ -131,9 +148,12 @@ def handle_offered(
 
     application = _get_application_from_workflow(workflow_data, db)
     decision_notes = workflow_data.get("decision_notes")
+    offer_expires_at = _normalize_offer_expires_at(
+        workflow_data.get("offer_expires_at")
+    )
 
     _update_application_decision(
-        application, ApplicationStatus.OFFERED, decision_notes, db
+        application, ApplicationStatus.OFFERED, decision_notes, offer_expires_at, db
     )
 
     recipient = (
@@ -164,7 +184,7 @@ def handle_rejected(
     decision_notes = workflow_data.get("decision_notes")
 
     _update_application_decision(
-        application, ApplicationStatus.REJECTED, decision_notes, db
+        application, ApplicationStatus.REJECTED, decision_notes, None, db
     )
 
     recipient = (
@@ -195,7 +215,7 @@ def handle_on_hold(
     decision_notes = workflow_data.get("decision_notes")
 
     _update_application_decision(
-        application, ApplicationStatus.ON_HOLD, decision_notes, db
+        application, ApplicationStatus.ON_HOLD, decision_notes, None, db
     )
 
 
