@@ -54,6 +54,26 @@ admission_router = APIRouter(
 )
 
 
+def _ensure_no_other_open_admission_cycle(
+    db: Session,
+    institute_id: UUID,
+    *,
+    exclude_cycle_id: Optional[UUID] = None,
+) -> None:
+    """Raise 400 if another cycle for this institute is already OPEN."""
+    q = db.query(AdmissionCycle).filter(
+        AdmissionCycle.institute_id == institute_id,
+        AdmissionCycle.status == AdmissionCycleStatus.OPEN,
+    )
+    if exclude_cycle_id is not None:
+        q = q.filter(AdmissionCycle.id != exclude_cycle_id)
+    if q.first() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Another admission cycle is already open for this institute. Close it before opening a new one.",
+        )
+
+
 # ==================== CUSTOM FORM FIELD ENDPOINTS ====================
 
 
@@ -524,6 +544,9 @@ def create_admission_cycle(
     cycle_data = cycle.model_dump()
     cycle_data['institute_id'] = staff.institute_id
     cycle_data['created_by'] = staff.user_id
+
+    if cycle_data.get("status") == AdmissionCycleStatus.OPEN:
+        _ensure_no_other_open_admission_cycle(db, staff.institute_id)
     
     try:
         db_cycle = AdmissionCycle(**cycle_data)
@@ -578,6 +601,11 @@ def update_admission_cycle(
 
     # Update fields
     update_data = cycle_update.model_dump(exclude_unset=True)
+    new_status = update_data.get("status", db_cycle.status)
+    if new_status == AdmissionCycleStatus.OPEN:
+        _ensure_no_other_open_admission_cycle(
+            db, db_cycle.institute_id, exclude_cycle_id=db_cycle.id
+        )
     for field, value in update_data.items():
         setattr(db_cycle, field, value)
 

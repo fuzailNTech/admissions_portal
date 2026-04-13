@@ -20,6 +20,7 @@ class AdmissionCycleCreate(BaseModel):
     name: str = Field(..., min_length=1, description="e.g., Admissions 2026-27")
     academic_year: str = Field(..., description="e.g., 2026-27")
     session: AcademicSession = AcademicSession.ANNUAL
+    status: AdmissionCycleStatus = AdmissionCycleStatus.DRAFT
     application_start_date: datetime
     application_end_date: datetime
     description: Optional[str] = None
