@@ -51,6 +51,15 @@ class PaginatedApplicationListResponse(BaseModel):
     total: int = Field(..., ge=0, description="Total number of items matching the filters")
 
 
+class AvailableAssigneeItem(BaseModel):
+    """Minimal staff profile payload for assignment dropdown."""
+
+    id: UUID
+    first_name: str
+    last_name: str
+    email: str
+
+
 # ==================== APPLICATION DETAIL (no docs) ====================
 
 

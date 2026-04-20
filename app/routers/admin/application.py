@@ -32,9 +32,10 @@ from app.database.models.application import (
     StudentComment,
     VerificationStatus,
 )
-from app.database.models.auth import StaffProfile, StaffRoleType, User
+from app.database.models.auth import StaffCampus, StaffProfile, StaffRoleType, User
 from app.database.models.workflow import WorkflowInstance, WorkflowInstanceStep, WorkflowStepStatus
 from app.schema.admin.application import (
+    AvailableAssigneeItem,
     ApplicationDetailResponse,
     ApplicationListItem,
     ApplicationListStudentSummary,
@@ -190,6 +191,72 @@ def list_applications(
             )
         )
     return PaginatedApplicationListResponse(items=result, total=total)
+
+
+@application_router.get(
+    "/available-assignee",
+    response_model=List[AvailableAssigneeItem],
+    summary="List available staff assignees (admin)",
+)
+def list_available_assignees(
+    current_staff: StaffProfile = Depends(require_admin_staff),
+    db: Session = Depends(get_db),
+):
+    """
+    Return assignable staff profiles for application assignment.
+
+    - Institute admin: all active staff in the same institute.
+    - Campus admin: self + active staff assigned to at least one of their campuses,
+      excluding other campus admins.
+    """
+    if current_staff.role == StaffRoleType.INSTITUTE_ADMIN:
+        staff_profiles = (
+            db.query(StaffProfile)
+            .join(StaffProfile.user)
+            .filter(
+                StaffProfile.institute_id == current_staff.institute_id,
+                StaffProfile.is_active == True,
+                User.is_active == True,
+            )
+            .order_by(StaffProfile.first_name.asc(), StaffProfile.last_name.asc())
+            .all()
+        )
+    else:
+        accessible_campus_ids = [campus.id for campus in get_accessible_campuses(current_staff, db)]
+
+        staff_profiles = (
+            db.query(StaffProfile)
+            .join(StaffProfile.user)
+            .join(StaffCampus, StaffCampus.staff_profile_id == StaffProfile.id)
+            .filter(
+                StaffProfile.institute_id == current_staff.institute_id,
+                StaffProfile.is_active == True,
+                User.is_active == True,
+                StaffCampus.is_active == True,
+                StaffCampus.campus_id.in_(accessible_campus_ids),
+                or_(
+                    StaffProfile.role != StaffRoleType.CAMPUS_ADMIN,
+                    StaffProfile.id == current_staff.id,
+                ),
+            )
+            .distinct()
+            .order_by(StaffProfile.first_name.asc(), StaffProfile.last_name.asc())
+            .all()
+        )
+
+        if current_staff.id not in [staff.id for staff in staff_profiles]:
+            staff_profiles.insert(0, current_staff)
+
+    return [
+        AvailableAssigneeItem(
+            id=staff.id,
+            first_name=staff.first_name,
+            last_name=staff.last_name,
+            email=staff.user.email,
+        )
+        for staff in staff_profiles
+        if staff.user is not None
+    ]
 
 
 @application_router.get(

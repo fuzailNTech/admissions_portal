@@ -57,7 +57,7 @@ def _build_admin_user_response(staff: StaffProfile) -> AdminUserResponse:
         if assignment.is_active and assignment.campus is not None
     ]
     return AdminUserResponse(
-        user_id=staff.user.id,
+        id=staff.id,
         email=staff.user.email,
         first_name=staff.first_name,
         last_name=staff.last_name,
