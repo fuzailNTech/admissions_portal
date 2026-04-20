@@ -58,6 +58,7 @@ def _build_admin_user_response(staff: StaffProfile) -> AdminUserResponse:
     ]
     return AdminUserResponse(
         id=staff.id,
+        user_id=staff.user.id,
         email=staff.user.email,
         first_name=staff.first_name,
         last_name=staff.last_name,

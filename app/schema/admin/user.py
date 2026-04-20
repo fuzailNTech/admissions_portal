@@ -51,6 +51,7 @@ class AssignedCampusMetadata(BaseModel):
 
 class AdminUserResponse(BaseModel):
     id: UUID
+    user_id: UUID
     email: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
