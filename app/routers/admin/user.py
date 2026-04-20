@@ -177,16 +177,16 @@ def list_staff_users(
     return [_build_admin_user_response(staff) for staff in staff_users]
 
 
-@admin_user_router.get("/{user_id}", response_model=AdminUserResponse)
+@admin_user_router.get("/{id}", response_model=AdminUserResponse)
 def get_staff_user(
-    user_id: UUID,
+    id: UUID,
     current_staff: StaffProfile = Depends(is_institute_admin),
     db: Session = Depends(get_db),
 ):
     staff_user = (
         db.query(StaffProfile)
         .filter(
-            StaffProfile.user_id == user_id,
+            StaffProfile.id == id,
             StaffProfile.institute_id == current_staff.institute_id,
         )
         .first()
@@ -196,14 +196,14 @@ def get_staff_user(
     return _build_admin_user_response(staff_user)
 
 
-@admin_user_router.patch("/{user_id}", response_model=AdminUserResponse)
+@admin_user_router.patch("/{id}", response_model=AdminUserResponse)
 def update_staff_user(
-    user_id: UUID,
+    id: UUID,
     body: AdminUserUpdateRequest,
     current_staff: StaffProfile = Depends(is_institute_admin),
     db: Session = Depends(get_db),
 ):
-    if user_id == current_staff.user_id:
+    if id == current_staff.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You cannot update yourself from this endpoint",
@@ -212,7 +212,7 @@ def update_staff_user(
     staff_user = (
         db.query(StaffProfile)
         .filter(
-            StaffProfile.user_id == user_id,
+            StaffProfile.id == id,
             StaffProfile.institute_id == current_staff.institute_id,
         )
         .first()
@@ -267,13 +267,13 @@ def update_staff_user(
     return _build_admin_user_response(staff_user)
 
 
-@admin_user_router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@admin_user_router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_staff_user(
-    user_id: UUID,
+    id: UUID,
     current_staff: StaffProfile = Depends(is_institute_admin),
     db: Session = Depends(get_db),
 ):
-    if user_id == current_staff.user_id:
+    if id == current_staff.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You cannot delete your own account",
@@ -282,7 +282,7 @@ def delete_staff_user(
     staff_user = (
         db.query(StaffProfile)
         .filter(
-            StaffProfile.user_id == user_id,
+            StaffProfile.id == id,
             StaffProfile.institute_id == current_staff.institute_id,
         )
         .first()
