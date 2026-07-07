@@ -1,0 +1,473 @@
+{
+  "institutes": [
+    {
+      "key": "gcl",
+      "name": "Government College Lahore",
+      "institute_code": "GCL-LHR",
+      "institute_type": "government",
+      "institute_level": "college",
+      "status": "active",
+      "application_assignment_mode": "auto",
+      "registration_number": "BISE-LHR-1957-001",
+      "regulatory_body": "BISE Lahore",
+      "established_year": 1864,
+      "primary_email": "admissions@gcl.edu.pk",
+      "primary_phone": "+92-42-99211234",
+      "website_url": "https://www.gcl.edu.pk",
+      "custom_metadata": {
+        "affiliation": "Board of Intermediate and Secondary Education, Lahore",
+        "medium": "English/Urdu"
+      },
+      "admin": {
+        "email": "admin@gcl.edu.pk",
+        "first_name": "Ahmed",
+        "last_name": "Khan",
+        "password": "GclAdmin@2026"
+      },
+      "workflow_definition": {
+        "workflow_name": "GCL Admission Workflow",
+        "version": 1,
+        "published": true,
+        "active": true
+      },
+      "programs": [
+        {
+          "code": "PRE-MED",
+          "name": "Pre-Medical",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSc Pre-Medical group for students pursuing medicine and allied health sciences."
+        },
+        {
+          "code": "PRE-ENG",
+          "name": "Pre-Engineering",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSc Pre-Engineering group for students pursuing engineering and technology."
+        },
+        {
+          "code": "ICS",
+          "name": "Computer Science",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "48000.00",
+          "shift": "morning",
+          "description": "Intermediate in Computer Science (ICS) with mathematics and computer studies."
+        },
+        {
+          "code": "ICOM",
+          "name": "Commerce",
+          "level": "Intermediate",
+          "category": "Commerce",
+          "duration_years": 2,
+          "fee": "40000.00",
+          "shift": "morning",
+          "description": "I.Com program covering accounting, economics, and business studies."
+        },
+        {
+          "code": "FA",
+          "name": "Faculty of Arts",
+          "level": "Intermediate",
+          "category": "Arts",
+          "duration_years": 2,
+          "fee": "35000.00",
+          "shift": "morning",
+          "description": "FA program with humanities and social science subjects."
+        }
+      ],
+      "campuses": [
+        {
+          "key": "main",
+          "name": "Main Campus",
+          "campus_code": "GCL-MAIN",
+          "campus_type": "co_ed",
+          "province_state": "Punjab",
+          "city": "Lahore",
+          "postal_code": "54000",
+          "address_line": "The Mall Road, Lahore",
+          "campus_email": "main@gcl.edu.pk",
+          "campus_phone": "+92-42-99211234",
+          "program_codes": ["PRE-MED", "PRE-ENG", "ICS", "ICOM", "FA"]
+        },
+        {
+          "key": "girls",
+          "name": "Girls Campus",
+          "campus_code": "GCL-GIRLS",
+          "campus_type": "girls",
+          "province_state": "Punjab",
+          "city": "Lahore",
+          "postal_code": "54000",
+          "address_line": "Ferozepur Road, Lahore",
+          "campus_email": "girls@gcl.edu.pk",
+          "campus_phone": "+92-42-99211567",
+          "program_codes": ["PRE-MED", "PRE-ENG", "ICS", "FA"]
+        }
+      ],
+      "admission_cycles": [
+        {
+          "key": "2026-27",
+          "name": "Intermediate Admissions 2026-27",
+          "academic_year": "2026-27",
+          "session": "annual",
+          "status": "open",
+          "application_start_date": "2026-05-01T00:00:00+05:00",
+          "application_end_date": "2026-08-31T23:59:59+05:00",
+          "description": "First-year intermediate admissions for the 2026-27 academic session.",
+          "is_published": true,
+          "campus_offerings": [
+            {
+              "campus_key": "main",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 120,
+                  "description": "Morning shift Pre-Medical at Main Campus.",
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 75,
+                      "priority_order": 1
+                    },
+                    {
+                      "quota_type": "hafiz_e_quran",
+                      "quota_name": "Hafiz-e-Quran",
+                      "allocated_seats": 10,
+                      "minimum_marks": 70,
+                      "priority_order": 2,
+                      "required_documents": ["hafiz_certificate"]
+                    },
+                    {
+                      "quota_type": "sports",
+                      "quota_name": "Sports",
+                      "allocated_seats": 10,
+                      "minimum_marks": 65,
+                      "priority_order": 3,
+                      "required_documents": ["sports_certificate"]
+                    },
+                    {
+                      "quota_type": "minority",
+                      "quota_name": "Minority",
+                      "allocated_seats": 10,
+                      "minimum_marks": 70,
+                      "priority_order": 4
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 100,
+                  "description": "Morning shift Pre-Engineering at Main Campus.",
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 80,
+                      "minimum_marks": 75,
+                      "priority_order": 1
+                    },
+                    {
+                      "quota_type": "hafiz_e_quran",
+                      "quota_name": "Hafiz-e-Quran",
+                      "allocated_seats": 10,
+                      "minimum_marks": 70,
+                      "priority_order": 2
+                    },
+                    {
+                      "quota_type": "sports",
+                      "quota_name": "Sports",
+                      "allocated_seats": 10,
+                      "minimum_marks": 65,
+                      "priority_order": 3
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 70,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 80,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 60,
+                      "priority_order": 1
+                    },
+                    {
+                      "quota_type": "district_reserved",
+                      "quota_name": "Lahore District Reserved",
+                      "allocated_seats": 10,
+                      "minimum_marks": 55,
+                      "priority_order": 2
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 55,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "campus_key": "girls",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 80,
+                  "description": "Morning shift Pre-Medical at Girls Campus.",
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 65,
+                      "minimum_marks": 75,
+                      "priority_order": 1
+                    },
+                    {
+                      "quota_type": "hafiz_e_quran",
+                      "quota_name": "Hafiz-e-Quran",
+                      "allocated_seats": 8,
+                      "minimum_marks": 70,
+                      "priority_order": 2
+                    },
+                    {
+                      "quota_type": "sports",
+                      "quota_name": "Sports",
+                      "allocated_seats": 7,
+                      "minimum_marks": 65,
+                      "priority_order": 3
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 75,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICS",
+                  "total_seats": 40,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 40,
+                      "minimum_marks": 70,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 40,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 40,
+                      "minimum_marks": 55,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "imc",
+      "name": "Islamabad Model College",
+      "institute_code": "IMC-ISB",
+      "institute_type": "semi_government",
+      "institute_level": "college",
+      "status": "active",
+      "application_assignment_mode": "manual",
+      "registration_number": "FBISE-1985-042",
+      "regulatory_body": "Federal Board of Intermediate and Secondary Education",
+      "established_year": 1985,
+      "primary_email": "info@imc.edu.pk",
+      "primary_phone": "+92-51-9201234",
+      "website_url": "https://www.imc.edu.pk",
+      "custom_metadata": {
+        "affiliation": "Federal Board",
+        "campus_count": 1
+      },
+      "admin": {
+        "email": "admin@imc.edu.pk",
+        "first_name": "Sara",
+        "last_name": "Malik",
+        "password": "ImcAdmin@2026"
+      },
+      "workflow_definition": {
+        "workflow_name": "IMC Admission Workflow",
+        "version": 1,
+        "published": true,
+        "active": true
+      },
+      "programs": [
+        {
+          "code": "PRE-MED",
+          "name": "Pre-Medical",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "52000.00",
+          "shift": "morning",
+          "description": "FSc Pre-Medical under Federal Board curriculum."
+        },
+        {
+          "code": "PRE-ENG",
+          "name": "Pre-Engineering",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "52000.00",
+          "shift": "morning",
+          "description": "FSc Pre-Engineering under Federal Board curriculum."
+        },
+        {
+          "code": "ICS",
+          "name": "Computer Science",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "55000.00",
+          "shift": "afternoon",
+          "description": "ICS afternoon shift program."
+        }
+      ],
+      "campuses": [
+        {
+          "key": "main",
+          "name": "Main Campus",
+          "campus_code": "IMC-MAIN",
+          "campus_type": "co_ed",
+          "province_state": "Islamabad Capital Territory",
+          "city": "Islamabad",
+          "postal_code": "44000",
+          "address_line": "Sector H-8/1, Islamabad",
+          "campus_email": "main@imc.edu.pk",
+          "campus_phone": "+92-51-9201234",
+          "program_codes": ["PRE-MED", "PRE-ENG", "ICS"]
+        }
+      ],
+      "admission_cycles": [
+        {
+          "key": "2026-27",
+          "name": "Admissions 2026-27",
+          "academic_year": "2026-27",
+          "session": "annual",
+          "status": "upcoming",
+          "application_start_date": "2026-08-01T00:00:00+05:00",
+          "application_end_date": "2026-09-30T23:59:59+05:00",
+          "description": "Upcoming intermediate admissions cycle for Islamabad Model College.",
+          "is_published": true,
+          "campus_offerings": [
+            {
+              "campus_key": "main",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 45,
+                      "minimum_marks": 78,
+                      "priority_order": 1
+                    },
+                    {
+                      "quota_type": "defense_forces",
+                      "quota_name": "Armed Forces Children",
+                      "allocated_seats": 8,
+                      "minimum_marks": 72,
+                      "priority_order": 2,
+                      "required_documents": ["parent_service_certificate"]
+                    },
+                    {
+                      "quota_type": "disabled",
+                      "quota_name": "Persons with Disabilities",
+                      "allocated_seats": 7,
+                      "minimum_marks": 65,
+                      "priority_order": 3
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 78,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICS",
+                  "total_seats": 30,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 30,
+                      "minimum_marks": 72,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

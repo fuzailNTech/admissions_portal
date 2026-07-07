@@ -10,6 +10,10 @@ from app.database.models.workflow import WorkflowCatalog
 from app.database.models.auth import User
 from app.utils.auth import require_super_admin
 from app.settings import BPMN_DIR
+from app.seed.institute_admissions import (
+    preview_institute_admissions_seed,
+    seed_institute_admissions,
+)
 
 seed_router = APIRouter(
     prefix="/seed",
@@ -263,3 +267,56 @@ def preview_bpmn_files(
         "total_files": len(bpmn_files),
         "files": preview,
     }
+
+
+@seed_router.get("/institute-admissions/preview")
+def preview_institute_admissions(
+    current_user: User = Depends(require_super_admin),
+):
+    """
+    Preview institute/admission seed data without writing to the database.
+
+    Shows institutes, campuses, programs, and admission cycles defined in the
+    JSON dataset. Useful to verify before running the seed operation.
+    """
+    try:
+        return preview_institute_admissions_seed()
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+
+
+@seed_router.post("/institute-admissions")
+def seed_institute_admissions_data(
+    update_existing: bool = False,
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """
+    Seed institutes with campuses, programs, admission cycles, institute admins,
+    and workflow definitions.
+
+    Requires super admin role.
+    Reads from app/seed/data/institute_admissions.json.
+
+    Seed the workflow catalog first (POST /super-admin/seed/workflow-catalog)
+    so workflow definitions can compile.
+
+    If update_existing is False (default), skips institutes that already exist
+    (matched by institute_code).
+    If update_existing is True, updates existing institute records but does not
+    re-seed related campuses, programs, admission cycles, admins, or workflows.
+    """
+    try:
+        return seed_institute_admissions(
+            db,
+            created_by=current_user.id,
+            update_existing=update_existing,
+        )
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
