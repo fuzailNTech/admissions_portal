@@ -24,6 +24,7 @@ from app.database.models.admission import (
     QuotaType,
 )
 from app.database.models.auth import StaffProfile, StaffRoleType, User
+from app.database.models.campus_visit import CampusVisitSlot, CampusVisitSlotStatus
 from app.database.models.institute import (
     AssignmentMode,
     Campus,
@@ -70,9 +71,12 @@ def preview_institute_admissions_seed() -> Dict[str, Any]:
         cycles = institute.get("admission_cycles", [])
 
         program_offerings = 0
+        visit_slot_count = 0
         for cycle in cycles:
             for campus_offering in cycle.get("campus_offerings", []):
                 program_offerings += len(campus_offering.get("programs", []))
+        for campus in campuses:
+            visit_slot_count += len(campus.get("visit_slots", []))
 
         admin = institute.get("admin")
         workflow = institute.get("workflow_definition")
@@ -86,6 +90,7 @@ def preview_institute_admissions_seed() -> Dict[str, Any]:
                 "program_count": len(programs),
                 "admission_cycle_count": len(cycles),
                 "program_offering_count": program_offerings,
+                "visit_slot_count": visit_slot_count,
                 "admin_email": admin.get("email") if admin else None,
                 "workflow_name": workflow.get("workflow_name") if workflow else None,
             }
@@ -114,7 +119,7 @@ def seed_institute_admissions(
 ) -> Dict[str, Any]:
     """
     Seed institutes, campuses, programs, campus-program links, admission cycles,
-    campus cycles, program cycles, and quotas from the JSON dataset.
+    campus visit slots, campus cycles, program cycles, and quotas from the JSON dataset.
 
     Skips institutes that already exist (by institute_code) unless update_existing=True.
     When update_existing=True, only the institute record is updated; related entities
@@ -164,6 +169,10 @@ def seed_institute_admissions(
             campus_map = _create_campuses(
                 db, institute, institute_data.get("campuses", []), created_by
             )
+            visit_slot_count = sum(
+                len(campus_data.get("visit_slots", []))
+                for campus_data in institute_data.get("campuses", [])
+            )
             _link_campus_programs(
                 db,
                 institute_data.get("campuses", []),
@@ -198,6 +207,7 @@ def seed_institute_admissions(
                 "institute_code": institute_code,
                 "id": str(institute.id),
                 "campuses": len(campus_map),
+                "visit_slots": visit_slot_count,
                 "programs": len(program_map),
                 "admission_cycles": cycle_summary["cycles"],
                 "program_offerings": cycle_summary["program_offerings"],
@@ -323,7 +333,37 @@ def _create_campuses(
         db.add(campus)
         db.flush()
         campus_map[campus_data["key"]] = campus
+        _create_visit_slots(
+            db,
+            campus,
+            campus_data.get("visit_slots", []),
+            created_by,
+        )
     return campus_map
+
+
+def _create_visit_slots(
+    db: Session,
+    campus: Campus,
+    slots: List[Dict[str, Any]],
+    created_by: Optional[UUID],
+) -> None:
+    """Create published visit slots for a campus."""
+    for slot_data in slots:
+        slot = CampusVisitSlot(
+            campus_id=campus.id,
+            starts_at=_parse_datetime(slot_data["starts_at"]),
+            ends_at=_parse_datetime(slot_data["ends_at"]),
+            capacity=slot_data["capacity"],
+            status=_enum_value(
+                CampusVisitSlotStatus, slot_data.get("status", "draft")
+            ),
+            title=slot_data.get("title"),
+            notes=slot_data.get("notes"),
+            created_by=created_by,
+        )
+        db.add(slot)
+    db.flush()
 
 
 def _link_campus_programs(

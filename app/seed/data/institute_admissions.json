@@ -1,113 +1,209 @@
 {
   "institutes": [
     {
-      "key": "gcl",
-      "name": "Government College Lahore",
-      "institute_code": "GCL-LHR",
-      "institute_type": "government",
+      "key": "pgc",
+      "name": "Punjab College",
+      "institute_code": "PGC",
+      "institute_type": "private",
       "institute_level": "college",
       "status": "active",
       "application_assignment_mode": "auto",
-      "registration_number": "BISE-LHR-1957-001",
-      "regulatory_body": "BISE Lahore",
-      "established_year": 1864,
-      "primary_email": "admissions@gcl.edu.pk",
-      "primary_phone": "+92-42-99211234",
-      "website_url": "https://www.gcl.edu.pk",
-      "custom_metadata": {
-        "affiliation": "Board of Intermediate and Secondary Education, Lahore",
-        "medium": "English/Urdu"
-      },
+      "primary_email": "admissions@punjabcollege.edu.pk",
+      "primary_phone": "+92-300-0000000",
+      "website_url": "https://www.punjabcollege.edu.pk",
       "admin": {
-        "email": "admin@gcl.edu.pk",
-        "first_name": "Ahmed",
-        "last_name": "Khan",
-        "password": "GclAdmin@2026"
+        "email": "admin@punjabcollege.edu.pk",
+        "first_name": "Campus",
+        "last_name": "Admin",
+        "password": "PGC@2026"
       },
       "workflow_definition": {
-        "workflow_name": "GCL Admission Workflow",
+        "workflow_name": "Punjab College Admission Workflow",
         "version": 1,
         "published": true,
         "active": true
       },
       "programs": [
         {
-          "code": "PRE-MED",
-          "name": "Pre-Medical",
-          "level": "Intermediate",
-          "category": "Science",
-          "duration_years": 2,
-          "fee": "45000.00",
-          "shift": "morning",
-          "description": "FSc Pre-Medical group for students pursuing medicine and allied health sciences."
-        },
-        {
-          "code": "PRE-ENG",
-          "name": "Pre-Engineering",
-          "level": "Intermediate",
-          "category": "Science",
-          "duration_years": 2,
-          "fee": "45000.00",
-          "shift": "morning",
-          "description": "FSc Pre-Engineering group for students pursuing engineering and technology."
-        },
-        {
           "code": "ICS",
-          "name": "Computer Science",
+          "name": "ICS",
           "level": "Intermediate",
           "category": "Science",
           "duration_years": 2,
           "fee": "48000.00",
           "shift": "morning",
-          "description": "Intermediate in Computer Science (ICS) with mathematics and computer studies."
+          "description": "Intermediate in Computer Science."
+        },
+        {
+          "code": "PRE-MED",
+          "name": "FSC Pre-Medical",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Medical group."
+        },
+        {
+          "code": "PRE-ENG",
+          "name": "FSC Pre-Engineering",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Engineering group."
         },
         {
           "code": "ICOM",
-          "name": "Commerce",
+          "name": "ICOM",
           "level": "Intermediate",
           "category": "Commerce",
           "duration_years": 2,
           "fee": "40000.00",
           "shift": "morning",
-          "description": "I.Com program covering accounting, economics, and business studies."
+          "description": "Intermediate in Commerce."
         },
         {
           "code": "FA",
-          "name": "Faculty of Arts",
+          "name": "FA",
           "level": "Intermediate",
           "category": "Arts",
           "duration_years": 2,
           "fee": "35000.00",
           "shift": "morning",
-          "description": "FA program with humanities and social science subjects."
+          "description": "Faculty of Arts."
         }
       ],
       "campuses": [
         {
-          "key": "main",
-          "name": "Main Campus",
-          "campus_code": "GCL-MAIN",
+          "key": "lahore-main",
+          "name": "Punjab College Lahore Main",
+          "campus_code": "PGC-LHR-MAIN",
           "campus_type": "co_ed",
           "province_state": "Punjab",
           "city": "Lahore",
-          "postal_code": "54000",
-          "address_line": "The Mall Road, Lahore",
-          "campus_email": "main@gcl.edu.pk",
-          "campus_phone": "+92-42-99211234",
-          "program_codes": ["PRE-MED", "PRE-ENG", "ICS", "ICOM", "FA"]
+          "address_line": "77-A Main Boulevard, Gulberg III, Lahore",
+          "campus_email": "lahore.main@punjabcollege.edu.pk",
+          "campus_phone": "+92-42-35750000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "Punjab College Lahore Main - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "Punjab College Lahore Main - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "Punjab College Lahore Main - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
         },
         {
-          "key": "girls",
-          "name": "Girls Campus",
-          "campus_code": "GCL-GIRLS",
+          "key": "lahore-girls",
+          "name": "Punjab College Lahore Girls",
+          "campus_code": "PGC-LHR-GIRLS",
           "campus_type": "girls",
           "province_state": "Punjab",
           "city": "Lahore",
-          "postal_code": "54000",
-          "address_line": "Ferozepur Road, Lahore",
-          "campus_email": "girls@gcl.edu.pk",
-          "campus_phone": "+92-42-99211567",
-          "program_codes": ["PRE-MED", "PRE-ENG", "ICS", "FA"]
+          "address_line": "12-G Model Town, Lahore",
+          "campus_email": "lahore.girls@punjabcollege.edu.pk",
+          "campus_phone": "+92-42-35860000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "Punjab College Lahore Girls - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "Punjab College Lahore Girls - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "Punjab College Lahore Girls - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
+        },
+        {
+          "key": "faisalabad",
+          "name": "Punjab College Faisalabad",
+          "campus_code": "PGC-FSL",
+          "campus_type": "co_ed",
+          "province_state": "Punjab",
+          "city": "Faisalabad",
+          "address_line": "Jinnah Road, Faisalabad",
+          "campus_email": "faisalabad@punjabcollege.edu.pk",
+          "campus_phone": "+92-41-8500000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "Punjab College Faisalabad - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "Punjab College Faisalabad - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "Punjab College Faisalabad - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
         }
       ],
       "admission_cycles": [
@@ -119,78 +215,13 @@
           "status": "open",
           "application_start_date": "2026-05-01T00:00:00+05:00",
           "application_end_date": "2026-08-31T23:59:59+05:00",
-          "description": "First-year intermediate admissions for the 2026-27 academic session.",
+          "description": "First-year intermediate admissions for Punjab College.",
           "is_published": true,
           "campus_offerings": [
             {
-              "campus_key": "main",
+              "campus_key": "lahore-main",
               "is_open": true,
               "programs": [
-                {
-                  "program_code": "PRE-MED",
-                  "total_seats": 120,
-                  "description": "Morning shift Pre-Medical at Main Campus.",
-                  "quotas": [
-                    {
-                      "quota_type": "open_merit",
-                      "quota_name": "Open Merit",
-                      "allocated_seats": 90,
-                      "minimum_marks": 75,
-                      "priority_order": 1
-                    },
-                    {
-                      "quota_type": "hafiz_e_quran",
-                      "quota_name": "Hafiz-e-Quran",
-                      "allocated_seats": 10,
-                      "minimum_marks": 70,
-                      "priority_order": 2,
-                      "required_documents": ["hafiz_certificate"]
-                    },
-                    {
-                      "quota_type": "sports",
-                      "quota_name": "Sports",
-                      "allocated_seats": 10,
-                      "minimum_marks": 65,
-                      "priority_order": 3,
-                      "required_documents": ["sports_certificate"]
-                    },
-                    {
-                      "quota_type": "minority",
-                      "quota_name": "Minority",
-                      "allocated_seats": 10,
-                      "minimum_marks": 70,
-                      "priority_order": 4
-                    }
-                  ]
-                },
-                {
-                  "program_code": "PRE-ENG",
-                  "total_seats": 100,
-                  "description": "Morning shift Pre-Engineering at Main Campus.",
-                  "quotas": [
-                    {
-                      "quota_type": "open_merit",
-                      "quota_name": "Open Merit",
-                      "allocated_seats": 80,
-                      "minimum_marks": 75,
-                      "priority_order": 1
-                    },
-                    {
-                      "quota_type": "hafiz_e_quran",
-                      "quota_name": "Hafiz-e-Quran",
-                      "allocated_seats": 10,
-                      "minimum_marks": 70,
-                      "priority_order": 2
-                    },
-                    {
-                      "quota_type": "sports",
-                      "quota_name": "Sports",
-                      "allocated_seats": 10,
-                      "minimum_marks": 65,
-                      "priority_order": 3
-                    }
-                  ]
-                },
                 {
                   "program_code": "ICS",
                   "total_seats": 60,
@@ -199,28 +230,47 @@
                       "quota_type": "open_merit",
                       "quota_name": "Open Merit",
                       "allocated_seats": 60,
-                      "minimum_marks": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
                       "priority_order": 1
                     }
                   ]
                 },
                 {
                   "program_code": "ICOM",
-                  "total_seats": 80,
+                  "total_seats": 70,
                   "quotas": [
                     {
                       "quota_type": "open_merit",
                       "quota_name": "Open Merit",
                       "allocated_seats": 70,
-                      "minimum_marks": 60,
+                      "minimum_marks": 65,
                       "priority_order": 1
-                    },
-                    {
-                      "quota_type": "district_reserved",
-                      "quota_name": "Lahore District Reserved",
-                      "allocated_seats": 10,
-                      "minimum_marks": 55,
-                      "priority_order": 2
                     }
                   ]
                 },
@@ -232,7 +282,7 @@
                       "quota_type": "open_merit",
                       "quota_name": "Open Merit",
                       "allocated_seats": 50,
-                      "minimum_marks": 55,
+                      "minimum_marks": 65,
                       "priority_order": 1
                     }
                   ]
@@ -240,72 +290,141 @@
               ]
             },
             {
-              "campus_key": "girls",
+              "campus_key": "lahore-girls",
               "is_open": true,
               "programs": [
                 {
-                  "program_code": "PRE-MED",
-                  "total_seats": 80,
-                  "description": "Morning shift Pre-Medical at Girls Campus.",
-                  "quotas": [
-                    {
-                      "quota_type": "open_merit",
-                      "quota_name": "Open Merit",
-                      "allocated_seats": 65,
-                      "minimum_marks": 75,
-                      "priority_order": 1
-                    },
-                    {
-                      "quota_type": "hafiz_e_quran",
-                      "quota_name": "Hafiz-e-Quran",
-                      "allocated_seats": 8,
-                      "minimum_marks": 70,
-                      "priority_order": 2
-                    },
-                    {
-                      "quota_type": "sports",
-                      "quota_name": "Sports",
-                      "allocated_seats": 7,
-                      "minimum_marks": 65,
-                      "priority_order": 3
-                    }
-                  ]
-                },
-                {
-                  "program_code": "PRE-ENG",
+                  "program_code": "ICS",
                   "total_seats": 60,
                   "quotas": [
                     {
                       "quota_type": "open_merit",
                       "quota_name": "Open Merit",
                       "allocated_seats": 60,
-                      "minimum_marks": 75,
+                      "minimum_marks": 65,
                       "priority_order": 1
                     }
                   ]
                 },
                 {
-                  "program_code": "ICS",
-                  "total_seats": 40,
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
                   "quotas": [
                     {
                       "quota_type": "open_merit",
                       "quota_name": "Open Merit",
-                      "allocated_seats": 40,
-                      "minimum_marks": 70,
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
                       "priority_order": 1
                     }
                   ]
                 },
                 {
                   "program_code": "FA",
-                  "total_seats": 40,
+                  "total_seats": 50,
                   "quotas": [
                     {
                       "quota_type": "open_merit",
                       "quota_name": "Open Merit",
-                      "allocated_seats": 40,
-                      "minimum_marks": 55,
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "campus_key": "faisalabad",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
                       "priority_order": 1
                     }
                   ]
@@ -317,92 +436,1098 @@
       ]
     },
     {
-      "key": "imc",
-      "name": "Islamabad Model College",
-      "institute_code": "IMC-ISB",
-      "institute_type": "semi_government",
+      "key": "scl",
+      "name": "Superior College",
+      "institute_code": "SCL",
+      "institute_type": "private",
       "institute_level": "college",
       "status": "active",
-      "application_assignment_mode": "manual",
-      "registration_number": "FBISE-1985-042",
-      "regulatory_body": "Federal Board of Intermediate and Secondary Education",
-      "established_year": 1985,
-      "primary_email": "info@imc.edu.pk",
-      "primary_phone": "+92-51-9201234",
-      "website_url": "https://www.imc.edu.pk",
-      "custom_metadata": {
-        "affiliation": "Federal Board",
-        "campus_count": 1
-      },
+      "application_assignment_mode": "auto",
+      "primary_email": "admissions@superior.edu.pk",
+      "primary_phone": "+92-300-0000000",
+      "website_url": "https://www.superior.edu.pk",
       "admin": {
-        "email": "admin@imc.edu.pk",
-        "first_name": "Sara",
-        "last_name": "Malik",
-        "password": "ImcAdmin@2026"
+        "email": "admin@superior.edu.pk",
+        "first_name": "Campus",
+        "last_name": "Admin",
+        "password": "SCL@2026"
       },
       "workflow_definition": {
-        "workflow_name": "IMC Admission Workflow",
+        "workflow_name": "Superior College Admission Workflow",
         "version": 1,
         "published": true,
         "active": true
       },
       "programs": [
         {
-          "code": "PRE-MED",
-          "name": "Pre-Medical",
+          "code": "ICS",
+          "name": "ICS",
           "level": "Intermediate",
           "category": "Science",
           "duration_years": 2,
-          "fee": "52000.00",
+          "fee": "48000.00",
           "shift": "morning",
-          "description": "FSc Pre-Medical under Federal Board curriculum."
+          "description": "Intermediate in Computer Science."
+        },
+        {
+          "code": "PRE-MED",
+          "name": "FSC Pre-Medical",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Medical group."
         },
         {
           "code": "PRE-ENG",
-          "name": "Pre-Engineering",
+          "name": "FSC Pre-Engineering",
           "level": "Intermediate",
           "category": "Science",
           "duration_years": 2,
-          "fee": "52000.00",
+          "fee": "45000.00",
           "shift": "morning",
-          "description": "FSc Pre-Engineering under Federal Board curriculum."
+          "description": "FSC Pre-Engineering group."
         },
         {
-          "code": "ICS",
-          "name": "Computer Science",
+          "code": "ICOM",
+          "name": "ICOM",
           "level": "Intermediate",
-          "category": "Science",
+          "category": "Commerce",
           "duration_years": 2,
-          "fee": "55000.00",
-          "shift": "afternoon",
-          "description": "ICS afternoon shift program."
+          "fee": "40000.00",
+          "shift": "morning",
+          "description": "Intermediate in Commerce."
+        },
+        {
+          "code": "FA",
+          "name": "FA",
+          "level": "Intermediate",
+          "category": "Arts",
+          "duration_years": 2,
+          "fee": "35000.00",
+          "shift": "morning",
+          "description": "Faculty of Arts."
         }
       ],
       "campuses": [
         {
-          "key": "main",
-          "name": "Main Campus",
-          "campus_code": "IMC-MAIN",
+          "key": "lahore",
+          "name": "Superior College Lahore",
+          "campus_code": "SCL-LHR",
           "campus_type": "co_ed",
-          "province_state": "Islamabad Capital Territory",
-          "city": "Islamabad",
-          "postal_code": "44000",
-          "address_line": "Sector H-8/1, Islamabad",
-          "campus_email": "main@imc.edu.pk",
-          "campus_phone": "+92-51-9201234",
-          "program_codes": ["PRE-MED", "PRE-ENG", "ICS"]
+          "province_state": "Punjab",
+          "city": "Lahore",
+          "address_line": "31-A Main Gulberg, Lahore",
+          "campus_email": "lahore@superior.edu.pk",
+          "campus_phone": "+92-42-35770000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "Superior College Lahore - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "Superior College Lahore - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "Superior College Lahore - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
+        },
+        {
+          "key": "multan",
+          "name": "Superior College Multan",
+          "campus_code": "SCL-MLT",
+          "campus_type": "co_ed",
+          "province_state": "Punjab",
+          "city": "Multan",
+          "address_line": "Abdali Road, Multan",
+          "campus_email": "multan@superior.edu.pk",
+          "campus_phone": "+92-61-4500000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "Superior College Multan - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "Superior College Multan - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "Superior College Multan - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
         }
       ],
       "admission_cycles": [
         {
           "key": "2026-27",
-          "name": "Admissions 2026-27",
+          "name": "Intermediate Admissions 2026-27",
           "academic_year": "2026-27",
           "session": "annual",
-          "status": "upcoming",
-          "application_start_date": "2026-08-01T00:00:00+05:00",
-          "application_end_date": "2026-09-30T23:59:59+05:00",
-          "description": "Upcoming intermediate admissions cycle for Islamabad Model College.",
+          "status": "open",
+          "application_start_date": "2026-05-01T00:00:00+05:00",
+          "application_end_date": "2026-08-31T23:59:59+05:00",
+          "description": "First-year intermediate admissions for Superior College.",
+          "is_published": true,
+          "campus_offerings": [
+            {
+              "campus_key": "lahore",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "campus_key": "multan",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "kips",
+      "name": "KIPS Group of Colleges",
+      "institute_code": "KIPS",
+      "institute_type": "private",
+      "institute_level": "college",
+      "status": "active",
+      "application_assignment_mode": "auto",
+      "primary_email": "admissions@kips.edu.pk",
+      "primary_phone": "+92-300-0000000",
+      "website_url": "https://www.kips.edu.pk",
+      "admin": {
+        "email": "admin@kips.edu.pk",
+        "first_name": "Campus",
+        "last_name": "Admin",
+        "password": "KIPS@2026"
+      },
+      "workflow_definition": {
+        "workflow_name": "KIPS Group of Colleges Admission Workflow",
+        "version": 1,
+        "published": true,
+        "active": true
+      },
+      "programs": [
+        {
+          "code": "ICS",
+          "name": "ICS",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "48000.00",
+          "shift": "morning",
+          "description": "Intermediate in Computer Science."
+        },
+        {
+          "code": "PRE-MED",
+          "name": "FSC Pre-Medical",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Medical group."
+        },
+        {
+          "code": "PRE-ENG",
+          "name": "FSC Pre-Engineering",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Engineering group."
+        },
+        {
+          "code": "ICOM",
+          "name": "ICOM",
+          "level": "Intermediate",
+          "category": "Commerce",
+          "duration_years": 2,
+          "fee": "40000.00",
+          "shift": "morning",
+          "description": "Intermediate in Commerce."
+        },
+        {
+          "code": "FA",
+          "name": "FA",
+          "level": "Intermediate",
+          "category": "Arts",
+          "duration_years": 2,
+          "fee": "35000.00",
+          "shift": "morning",
+          "description": "Faculty of Arts."
+        }
+      ],
+      "campuses": [
+        {
+          "key": "lahore-boys",
+          "name": "KIPS College Lahore Boys",
+          "campus_code": "KIPS-LHR-BOYS",
+          "campus_type": "boys",
+          "province_state": "Punjab",
+          "city": "Lahore",
+          "address_line": "Shadman, Lahore",
+          "campus_email": "lahore.boys@kips.edu.pk",
+          "campus_phone": "+92-42-37420000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "KIPS College Lahore Boys - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "KIPS College Lahore Boys - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "KIPS College Lahore Boys - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
+        },
+        {
+          "key": "karachi",
+          "name": "KIPS College Karachi",
+          "campus_code": "KIPS-KHI",
+          "campus_type": "co_ed",
+          "province_state": "Sindh",
+          "city": "Karachi",
+          "address_line": "PECHS Block 6, Karachi",
+          "campus_email": "karachi@kips.edu.pk",
+          "campus_phone": "+92-21-34560000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "KIPS College Karachi - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "KIPS College Karachi - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "KIPS College Karachi - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
+        }
+      ],
+      "admission_cycles": [
+        {
+          "key": "2026-27",
+          "name": "Intermediate Admissions 2026-27",
+          "academic_year": "2026-27",
+          "session": "annual",
+          "status": "open",
+          "application_start_date": "2026-05-01T00:00:00+05:00",
+          "application_end_date": "2026-08-31T23:59:59+05:00",
+          "description": "First-year intermediate admissions for KIPS Group of Colleges.",
+          "is_published": true,
+          "campus_offerings": [
+            {
+              "campus_key": "lahore-boys",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "campus_key": "karachi",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "ric",
+      "name": "Roots International Colleges",
+      "institute_code": "RIC",
+      "institute_type": "private",
+      "institute_level": "college",
+      "status": "active",
+      "application_assignment_mode": "auto",
+      "primary_email": "admissions@rootsinternational.edu.pk",
+      "primary_phone": "+92-300-0000000",
+      "website_url": "https://www.rootsinternational.edu.pk",
+      "admin": {
+        "email": "admin@rootsinternational.edu.pk",
+        "first_name": "Campus",
+        "last_name": "Admin",
+        "password": "RIC@2026"
+      },
+      "workflow_definition": {
+        "workflow_name": "Roots International Colleges Admission Workflow",
+        "version": 1,
+        "published": true,
+        "active": true
+      },
+      "programs": [
+        {
+          "code": "ICS",
+          "name": "ICS",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "48000.00",
+          "shift": "morning",
+          "description": "Intermediate in Computer Science."
+        },
+        {
+          "code": "PRE-MED",
+          "name": "FSC Pre-Medical",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Medical group."
+        },
+        {
+          "code": "PRE-ENG",
+          "name": "FSC Pre-Engineering",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Engineering group."
+        },
+        {
+          "code": "ICOM",
+          "name": "ICOM",
+          "level": "Intermediate",
+          "category": "Commerce",
+          "duration_years": 2,
+          "fee": "40000.00",
+          "shift": "morning",
+          "description": "Intermediate in Commerce."
+        },
+        {
+          "code": "FA",
+          "name": "FA",
+          "level": "Intermediate",
+          "category": "Arts",
+          "duration_years": 2,
+          "fee": "35000.00",
+          "shift": "morning",
+          "description": "Faculty of Arts."
+        }
+      ],
+      "campuses": [
+        {
+          "key": "islamabad",
+          "name": "Roots College Islamabad",
+          "campus_code": "RIC-ISB",
+          "campus_type": "co_ed",
+          "province_state": "Islamabad Capital Territory",
+          "city": "Islamabad",
+          "address_line": "F-8 Markaz, Islamabad",
+          "campus_email": "islamabad@rootsinternational.edu.pk",
+          "campus_phone": "+92-51-2288000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "Roots College Islamabad - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "Roots College Islamabad - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "Roots College Islamabad - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
+        },
+        {
+          "key": "rawalpindi",
+          "name": "Roots College Rawalpindi",
+          "campus_code": "RIC-RWP",
+          "campus_type": "co_ed",
+          "province_state": "Punjab",
+          "city": "Rawalpindi",
+          "address_line": "Satellite Town, Rawalpindi",
+          "campus_email": "rawalpindi@rootsinternational.edu.pk",
+          "campus_phone": "+92-51-4850000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "Roots College Rawalpindi - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "Roots College Rawalpindi - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "Roots College Rawalpindi - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
+        }
+      ],
+      "admission_cycles": [
+        {
+          "key": "2026-27",
+          "name": "Intermediate Admissions 2026-27",
+          "academic_year": "2026-27",
+          "session": "annual",
+          "status": "open",
+          "application_start_date": "2026-05-01T00:00:00+05:00",
+          "application_end_date": "2026-08-31T23:59:59+05:00",
+          "description": "First-year intermediate admissions for Roots International Colleges.",
+          "is_published": true,
+          "campus_offerings": [
+            {
+              "campus_key": "islamabad",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "campus_key": "rawalpindi",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "fcc",
+      "name": "Forman Christian College (FC College) Lahore",
+      "institute_code": "FCC-LHR",
+      "institute_type": "private",
+      "institute_level": "college",
+      "status": "active",
+      "application_assignment_mode": "auto",
+      "primary_email": "admissions@fccollege.edu.pk",
+      "primary_phone": "+92-300-0000000",
+      "website_url": "https://www.fccollege.edu.pk",
+      "admin": {
+        "email": "admin@fccollege.edu.pk",
+        "first_name": "Campus",
+        "last_name": "Admin",
+        "password": "FCCLHR@2026"
+      },
+      "workflow_definition": {
+        "workflow_name": "Forman Christian College (FC College) Lahore Admission Workflow",
+        "version": 1,
+        "published": true,
+        "active": true
+      },
+      "programs": [
+        {
+          "code": "ICS",
+          "name": "ICS",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "48000.00",
+          "shift": "morning",
+          "description": "Intermediate in Computer Science."
+        },
+        {
+          "code": "PRE-MED",
+          "name": "FSC Pre-Medical",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Medical group."
+        },
+        {
+          "code": "PRE-ENG",
+          "name": "FSC Pre-Engineering",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Engineering group."
+        },
+        {
+          "code": "ICOM",
+          "name": "ICOM",
+          "level": "Intermediate",
+          "category": "Commerce",
+          "duration_years": 2,
+          "fee": "40000.00",
+          "shift": "morning",
+          "description": "Intermediate in Commerce."
+        },
+        {
+          "code": "FA",
+          "name": "FA",
+          "level": "Intermediate",
+          "category": "Arts",
+          "duration_years": 2,
+          "fee": "35000.00",
+          "shift": "morning",
+          "description": "Faculty of Arts."
+        }
+      ],
+      "campuses": [
+        {
+          "key": "main",
+          "name": "FC College Main Campus",
+          "campus_code": "FCC-MAIN",
+          "campus_type": "co_ed",
+          "province_state": "Punjab",
+          "city": "Lahore",
+          "address_line": "Ferozepur Road, Lahore",
+          "campus_email": "main@fccollege.edu.pk",
+          "campus_phone": "+92-42-99231581",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "FC College Main Campus - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "FC College Main Campus - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "FC College Main Campus - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
+        }
+      ],
+      "admission_cycles": [
+        {
+          "key": "2026-27",
+          "name": "Intermediate Admissions 2026-27",
+          "academic_year": "2026-27",
+          "session": "annual",
+          "status": "open",
+          "application_start_date": "2026-05-01T00:00:00+05:00",
+          "application_end_date": "2026-08-31T23:59:59+05:00",
+          "description": "First-year intermediate admissions for Forman Christian College (FC College) Lahore.",
           "is_published": true,
           "campus_offerings": [
             {
@@ -410,55 +1535,1532 @@
               "is_open": true,
               "programs": [
                 {
-                  "program_code": "PRE-MED",
+                  "program_code": "ICS",
                   "total_seats": 60,
                   "quotas": [
                     {
                       "quota_type": "open_merit",
                       "quota_name": "Open Merit",
-                      "allocated_seats": 45,
-                      "minimum_marks": 78,
-                      "priority_order": 1
-                    },
-                    {
-                      "quota_type": "defense_forces",
-                      "quota_name": "Armed Forces Children",
-                      "allocated_seats": 8,
-                      "minimum_marks": 72,
-                      "priority_order": 2,
-                      "required_documents": ["parent_service_certificate"]
-                    },
-                    {
-                      "quota_type": "disabled",
-                      "quota_name": "Persons with Disabilities",
-                      "allocated_seats": 7,
+                      "allocated_seats": 60,
                       "minimum_marks": 65,
-                      "priority_order": 3
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
                     }
                   ]
                 },
                 {
                   "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
                   "total_seats": 50,
                   "quotas": [
                     {
                       "quota_type": "open_merit",
                       "quota_name": "Open Merit",
                       "allocated_seats": 50,
-                      "minimum_marks": 78,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "gcu",
+      "name": "Government College University (GCU)",
+      "institute_code": "GCU",
+      "institute_type": "government",
+      "institute_level": "college",
+      "status": "active",
+      "application_assignment_mode": "auto",
+      "primary_email": "admissions@gcu.edu.pk",
+      "primary_phone": "+92-300-0000000",
+      "website_url": "https://www.gcu.edu.pk",
+      "admin": {
+        "email": "admin@gcu.edu.pk",
+        "first_name": "Campus",
+        "last_name": "Admin",
+        "password": "GCU@2026"
+      },
+      "workflow_definition": {
+        "workflow_name": "Government College University (GCU) Admission Workflow",
+        "version": 1,
+        "published": true,
+        "active": true
+      },
+      "programs": [
+        {
+          "code": "ICS",
+          "name": "ICS",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "48000.00",
+          "shift": "morning",
+          "description": "Intermediate in Computer Science."
+        },
+        {
+          "code": "PRE-MED",
+          "name": "FSC Pre-Medical",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Medical group."
+        },
+        {
+          "code": "PRE-ENG",
+          "name": "FSC Pre-Engineering",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Engineering group."
+        },
+        {
+          "code": "ICOM",
+          "name": "ICOM",
+          "level": "Intermediate",
+          "category": "Commerce",
+          "duration_years": 2,
+          "fee": "40000.00",
+          "shift": "morning",
+          "description": "Intermediate in Commerce."
+        },
+        {
+          "code": "FA",
+          "name": "FA",
+          "level": "Intermediate",
+          "category": "Arts",
+          "duration_years": 2,
+          "fee": "35000.00",
+          "shift": "morning",
+          "description": "Faculty of Arts."
+        }
+      ],
+      "campuses": [
+        {
+          "key": "main",
+          "name": "GCU Main Campus",
+          "campus_code": "GCU-MAIN",
+          "campus_type": "co_ed",
+          "province_state": "Punjab",
+          "city": "Lahore",
+          "address_line": "Katchery Road, Lahore",
+          "campus_email": "main@gcu.edu.pk",
+          "campus_phone": "+92-42-99231159",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ]
+        }
+      ],
+      "admission_cycles": [
+        {
+          "key": "2026-27",
+          "name": "Intermediate Admissions 2026-27",
+          "academic_year": "2026-27",
+          "session": "annual",
+          "status": "upcoming",
+          "application_start_date": "2026-05-01T00:00:00+05:00",
+          "application_end_date": "2026-08-31T23:59:59+05:00",
+          "description": "First-year intermediate admissions for Government College University (GCU).",
+          "is_published": true,
+          "campus_offerings": [
+            {
+              "campus_key": "main",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
                       "priority_order": 1
                     }
                   ]
                 },
                 {
-                  "program_code": "ICS",
-                  "total_seats": 30,
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
                   "quotas": [
                     {
                       "quota_type": "open_merit",
                       "quota_name": "Open Merit",
-                      "allocated_seats": 30,
-                      "minimum_marks": 72,
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "agc",
+      "name": "Aspire Group of Colleges",
+      "institute_code": "AGC",
+      "institute_type": "private",
+      "institute_level": "college",
+      "status": "active",
+      "application_assignment_mode": "auto",
+      "primary_email": "admissions@aspirecolleges.edu.pk",
+      "primary_phone": "+92-300-0000000",
+      "website_url": "https://www.aspirecolleges.edu.pk",
+      "admin": {
+        "email": "admin@aspirecolleges.edu.pk",
+        "first_name": "Campus",
+        "last_name": "Admin",
+        "password": "AGC@2026"
+      },
+      "workflow_definition": {
+        "workflow_name": "Aspire Group of Colleges Admission Workflow",
+        "version": 1,
+        "published": true,
+        "active": true
+      },
+      "programs": [
+        {
+          "code": "ICS",
+          "name": "ICS",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "48000.00",
+          "shift": "morning",
+          "description": "Intermediate in Computer Science."
+        },
+        {
+          "code": "PRE-MED",
+          "name": "FSC Pre-Medical",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Medical group."
+        },
+        {
+          "code": "PRE-ENG",
+          "name": "FSC Pre-Engineering",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Engineering group."
+        },
+        {
+          "code": "ICOM",
+          "name": "ICOM",
+          "level": "Intermediate",
+          "category": "Commerce",
+          "duration_years": 2,
+          "fee": "40000.00",
+          "shift": "morning",
+          "description": "Intermediate in Commerce."
+        },
+        {
+          "code": "FA",
+          "name": "FA",
+          "level": "Intermediate",
+          "category": "Arts",
+          "duration_years": 2,
+          "fee": "35000.00",
+          "shift": "morning",
+          "description": "Faculty of Arts."
+        }
+      ],
+      "campuses": [
+        {
+          "key": "karachi",
+          "name": "Aspire College Karachi",
+          "campus_code": "AGC-KHI",
+          "campus_type": "co_ed",
+          "province_state": "Sindh",
+          "city": "Karachi",
+          "address_line": "North Nazimabad, Karachi",
+          "campus_email": "karachi@aspirecolleges.edu.pk",
+          "campus_phone": "+92-21-36650000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "Aspire College Karachi - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "Aspire College Karachi - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "Aspire College Karachi - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
+        },
+        {
+          "key": "hyderabad",
+          "name": "Aspire College Hyderabad",
+          "campus_code": "AGC-HYD",
+          "campus_type": "co_ed",
+          "province_state": "Sindh",
+          "city": "Hyderabad",
+          "address_line": "Auto Bhan Road, Hyderabad",
+          "campus_email": "hyderabad@aspirecolleges.edu.pk",
+          "campus_phone": "+92-22-2780000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "Aspire College Hyderabad - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "Aspire College Hyderabad - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "Aspire College Hyderabad - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
+        }
+      ],
+      "admission_cycles": [
+        {
+          "key": "2026-27",
+          "name": "Intermediate Admissions 2026-27",
+          "academic_year": "2026-27",
+          "session": "annual",
+          "status": "open",
+          "application_start_date": "2026-05-01T00:00:00+05:00",
+          "application_end_date": "2026-08-31T23:59:59+05:00",
+          "description": "First-year intermediate admissions for Aspire Group of Colleges.",
+          "is_published": true,
+          "campus_offerings": [
+            {
+              "campus_key": "karachi",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "campus_key": "hyderabad",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "conc",
+      "name": "Concordia Colleges",
+      "institute_code": "CONC",
+      "institute_type": "private",
+      "institute_level": "college",
+      "status": "active",
+      "application_assignment_mode": "auto",
+      "primary_email": "admissions@concordia.edu.pk",
+      "primary_phone": "+92-300-0000000",
+      "website_url": "https://www.concordia.edu.pk",
+      "admin": {
+        "email": "admin@concordia.edu.pk",
+        "first_name": "Campus",
+        "last_name": "Admin",
+        "password": "CONC@2026"
+      },
+      "workflow_definition": {
+        "workflow_name": "Concordia Colleges Admission Workflow",
+        "version": 1,
+        "published": true,
+        "active": true
+      },
+      "programs": [
+        {
+          "code": "ICS",
+          "name": "ICS",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "48000.00",
+          "shift": "morning",
+          "description": "Intermediate in Computer Science."
+        },
+        {
+          "code": "PRE-MED",
+          "name": "FSC Pre-Medical",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Medical group."
+        },
+        {
+          "code": "PRE-ENG",
+          "name": "FSC Pre-Engineering",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Engineering group."
+        },
+        {
+          "code": "ICOM",
+          "name": "ICOM",
+          "level": "Intermediate",
+          "category": "Commerce",
+          "duration_years": 2,
+          "fee": "40000.00",
+          "shift": "morning",
+          "description": "Intermediate in Commerce."
+        },
+        {
+          "code": "FA",
+          "name": "FA",
+          "level": "Intermediate",
+          "category": "Arts",
+          "duration_years": 2,
+          "fee": "35000.00",
+          "shift": "morning",
+          "description": "Faculty of Arts."
+        }
+      ],
+      "campuses": [
+        {
+          "key": "lahore-girls",
+          "name": "Concordia College Lahore Girls",
+          "campus_code": "CONC-LHR-GIRLS",
+          "campus_type": "girls",
+          "province_state": "Punjab",
+          "city": "Lahore",
+          "address_line": "DHA Phase 5, Lahore",
+          "campus_email": "lahore.girls@concordia.edu.pk",
+          "campus_phone": "+92-42-37180000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "Concordia College Lahore Girls - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "Concordia College Lahore Girls - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "Concordia College Lahore Girls - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
+        },
+        {
+          "key": "sialkot",
+          "name": "Concordia College Sialkot",
+          "campus_code": "CONC-SKT",
+          "campus_type": "co_ed",
+          "province_state": "Punjab",
+          "city": "Sialkot",
+          "address_line": "Paris Road, Sialkot",
+          "campus_email": "sialkot@concordia.edu.pk",
+          "campus_phone": "+92-52-4260000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "Concordia College Sialkot - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "Concordia College Sialkot - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "Concordia College Sialkot - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
+        }
+      ],
+      "admission_cycles": [
+        {
+          "key": "2026-27",
+          "name": "Intermediate Admissions 2026-27",
+          "academic_year": "2026-27",
+          "session": "annual",
+          "status": "open",
+          "application_start_date": "2026-05-01T00:00:00+05:00",
+          "application_end_date": "2026-08-31T23:59:59+05:00",
+          "description": "First-year intermediate admissions for Concordia Colleges.",
+          "is_published": true,
+          "campus_offerings": [
+            {
+              "campus_key": "lahore-girls",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "campus_key": "sialkot",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "lcc",
+      "name": "Leads College",
+      "institute_code": "LCC",
+      "institute_type": "private",
+      "institute_level": "college",
+      "status": "active",
+      "application_assignment_mode": "auto",
+      "primary_email": "admissions@leadscollege.edu.pk",
+      "primary_phone": "+92-300-0000000",
+      "website_url": "https://www.leadscollege.edu.pk",
+      "admin": {
+        "email": "admin@leadscollege.edu.pk",
+        "first_name": "Campus",
+        "last_name": "Admin",
+        "password": "LCC@2026"
+      },
+      "workflow_definition": {
+        "workflow_name": "Leads College Admission Workflow",
+        "version": 1,
+        "published": true,
+        "active": true
+      },
+      "programs": [
+        {
+          "code": "ICS",
+          "name": "ICS",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "48000.00",
+          "shift": "morning",
+          "description": "Intermediate in Computer Science."
+        },
+        {
+          "code": "PRE-MED",
+          "name": "FSC Pre-Medical",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Medical group."
+        },
+        {
+          "code": "PRE-ENG",
+          "name": "FSC Pre-Engineering",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Engineering group."
+        },
+        {
+          "code": "ICOM",
+          "name": "ICOM",
+          "level": "Intermediate",
+          "category": "Commerce",
+          "duration_years": 2,
+          "fee": "40000.00",
+          "shift": "morning",
+          "description": "Intermediate in Commerce."
+        },
+        {
+          "code": "FA",
+          "name": "FA",
+          "level": "Intermediate",
+          "category": "Arts",
+          "duration_years": 2,
+          "fee": "35000.00",
+          "shift": "morning",
+          "description": "Faculty of Arts."
+        }
+      ],
+      "campuses": [
+        {
+          "key": "faisalabad",
+          "name": "Leads College Faisalabad",
+          "campus_code": "LCC-FSL",
+          "campus_type": "co_ed",
+          "province_state": "Punjab",
+          "city": "Faisalabad",
+          "address_line": "Susan Road, Faisalabad",
+          "campus_email": "faisalabad@leadscollege.edu.pk",
+          "campus_phone": "+92-41-8510000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "Leads College Faisalabad - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "Leads College Faisalabad - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "Leads College Faisalabad - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
+        },
+        {
+          "key": "gujranwala",
+          "name": "Leads College Gujranwala",
+          "campus_code": "LCC-GRW",
+          "campus_type": "co_ed",
+          "province_state": "Punjab",
+          "city": "Gujranwala",
+          "address_line": "GT Road, Gujranwala",
+          "campus_email": "gujranwala@leadscollege.edu.pk",
+          "campus_phone": "+92-55-3200000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "Leads College Gujranwala - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "Leads College Gujranwala - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "Leads College Gujranwala - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
+        }
+      ],
+      "admission_cycles": [
+        {
+          "key": "2026-27",
+          "name": "Intermediate Admissions 2026-27",
+          "academic_year": "2026-27",
+          "session": "annual",
+          "status": "open",
+          "application_start_date": "2026-05-01T00:00:00+05:00",
+          "application_end_date": "2026-08-31T23:59:59+05:00",
+          "description": "First-year intermediate admissions for Leads College.",
+          "is_published": true,
+          "campus_offerings": [
+            {
+              "campus_key": "faisalabad",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "campus_key": "gujranwala",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "tcc",
+      "name": "The City College",
+      "institute_code": "TCC",
+      "institute_type": "private",
+      "institute_level": "college",
+      "status": "active",
+      "application_assignment_mode": "auto",
+      "primary_email": "admissions@thecitycollege.edu.pk",
+      "primary_phone": "+92-300-0000000",
+      "website_url": "https://www.thecitycollege.edu.pk",
+      "admin": {
+        "email": "admin@thecitycollege.edu.pk",
+        "first_name": "Campus",
+        "last_name": "Admin",
+        "password": "TCC@2026"
+      },
+      "workflow_definition": {
+        "workflow_name": "The City College Admission Workflow",
+        "version": 1,
+        "published": true,
+        "active": true
+      },
+      "programs": [
+        {
+          "code": "ICS",
+          "name": "ICS",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "48000.00",
+          "shift": "morning",
+          "description": "Intermediate in Computer Science."
+        },
+        {
+          "code": "PRE-MED",
+          "name": "FSC Pre-Medical",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Medical group."
+        },
+        {
+          "code": "PRE-ENG",
+          "name": "FSC Pre-Engineering",
+          "level": "Intermediate",
+          "category": "Science",
+          "duration_years": 2,
+          "fee": "45000.00",
+          "shift": "morning",
+          "description": "FSC Pre-Engineering group."
+        },
+        {
+          "code": "ICOM",
+          "name": "ICOM",
+          "level": "Intermediate",
+          "category": "Commerce",
+          "duration_years": 2,
+          "fee": "40000.00",
+          "shift": "morning",
+          "description": "Intermediate in Commerce."
+        },
+        {
+          "code": "FA",
+          "name": "FA",
+          "level": "Intermediate",
+          "category": "Arts",
+          "duration_years": 2,
+          "fee": "35000.00",
+          "shift": "morning",
+          "description": "Faculty of Arts."
+        }
+      ],
+      "campuses": [
+        {
+          "key": "karachi",
+          "name": "The City College Karachi",
+          "campus_code": "TCC-KHI",
+          "campus_type": "co_ed",
+          "province_state": "Sindh",
+          "city": "Karachi",
+          "address_line": "Gulshan-e-Iqbal, Karachi",
+          "campus_email": "karachi@thecitycollege.edu.pk",
+          "campus_phone": "+92-21-34800000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "The City College Karachi - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "The City College Karachi - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "The City College Karachi - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
+        },
+        {
+          "key": "peshawar",
+          "name": "The City College Peshawar",
+          "campus_code": "TCC-PSH",
+          "campus_type": "boys",
+          "province_state": "Khyber Pakhtunkhwa",
+          "city": "Peshawar",
+          "address_line": "University Road, Peshawar",
+          "campus_email": "peshawar@thecitycollege.edu.pk",
+          "campus_phone": "+92-91-5700000",
+          "program_codes": [
+            "ICS",
+            "PRE-MED",
+            "PRE-ENG",
+            "ICOM",
+            "FA"
+          ],
+          "visit_slots": [
+            {
+              "title": "The City College Peshawar - Morning Campus Tour",
+              "starts_at": "2026-07-12T10:00:00+05:00",
+              "ends_at": "2026-07-12T13:00:00+05:00",
+              "capacity": 30,
+              "status": "published",
+              "notes": "Guided tour with admissions briefing."
+            },
+            {
+              "title": "The City College Peshawar - Open House",
+              "starts_at": "2026-07-19T14:00:00+05:00",
+              "ends_at": "2026-07-19T17:00:00+05:00",
+              "capacity": 25,
+              "status": "published",
+              "notes": "Meet faculty and explore facilities."
+            },
+            {
+              "title": "The City College Peshawar - Weekend Visit",
+              "starts_at": "2026-07-26T11:00:00+05:00",
+              "ends_at": "2026-07-26T14:00:00+05:00",
+              "capacity": 20,
+              "status": "published"
+            }
+          ]
+        }
+      ],
+      "admission_cycles": [
+        {
+          "key": "2026-27",
+          "name": "Intermediate Admissions 2026-27",
+          "academic_year": "2026-27",
+          "session": "annual",
+          "status": "open",
+          "application_start_date": "2026-05-01T00:00:00+05:00",
+          "application_end_date": "2026-08-31T23:59:59+05:00",
+          "description": "First-year intermediate admissions for The City College.",
+          "is_published": true,
+          "campus_offerings": [
+            {
+              "campus_key": "karachi",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "campus_key": "peshawar",
+              "is_open": true,
+              "programs": [
+                {
+                  "program_code": "ICS",
+                  "total_seats": 60,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 60,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-MED",
+                  "total_seats": 100,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 100,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "PRE-ENG",
+                  "total_seats": 90,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 90,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "ICOM",
+                  "total_seats": 70,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 70,
+                      "minimum_marks": 65,
+                      "priority_order": 1
+                    }
+                  ]
+                },
+                {
+                  "program_code": "FA",
+                  "total_seats": 50,
+                  "quotas": [
+                    {
+                      "quota_type": "open_merit",
+                      "quota_name": "Open Merit",
+                      "allocated_seats": 50,
+                      "minimum_marks": 65,
                       "priority_order": 1
                     }
                   ]

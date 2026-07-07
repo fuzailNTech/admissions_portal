@@ -295,8 +295,8 @@ def seed_institute_admissions_data(
     db: Session = Depends(get_db),
 ):
     """
-    Seed institutes with campuses, programs, admission cycles, institute admins,
-    and workflow definitions.
+    Seed institutes with campuses, programs, admission cycles, campus visit slots,
+    institute admins, and workflow definitions.
 
     Requires super admin role.
     Reads from app/seed/data/institute_admissions.json.
@@ -304,10 +304,12 @@ def seed_institute_admissions_data(
     Seed the workflow catalog first (POST /super-admin/seed/workflow-catalog)
     so workflow definitions can compile.
 
+    Campus visit slots are created from each campus's `visit_slots` array in the JSON.
+
     If update_existing is False (default), skips institutes that already exist
     (matched by institute_code).
     If update_existing is True, updates existing institute records but does not
-    re-seed related campuses, programs, admission cycles, admins, or workflows.
+    re-seed related campuses, programs, admission cycles, visit slots, admins, or workflows.
     """
     try:
         return seed_institute_admissions(
