@@ -10,7 +10,7 @@ app.add_middleware(
     allow_origins=[
         "https://college-admin-portal-amber.vercel.app",
         "https://super-admin-portal-iota.vercel.app", 
-        "https://college-website-phi-gold.vercel.app/"
+        "https://college-website-phi-gold.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
