@@ -8,10 +8,9 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
         "https://college-admin-portal-amber.vercel.app",
-        "https://super-admin-portal-iota.vercel.app"
+        "https://super-admin-portal-iota.vercel.app", 
+        "https://college-website-phi-gold.vercel.app/"
     ],
     allow_credentials=True,
     allow_methods=["*"],
